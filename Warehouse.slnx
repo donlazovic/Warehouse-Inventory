@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Warehouse.Api/Warehouse.Api.csproj" />
+    <Project Path="src/Warehouse.BusinessLayer/Warehouse.BusinessLayer.csproj" />
+    <Project Path="src/Warehouse.DataLayer/Warehouse.DataLayer.csproj" />
+    <Project Path="src/Warehouse.Domain/Warehouse.Domain.csproj" />
+  </Folder>
+</Solution>
