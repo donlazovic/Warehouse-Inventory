@@ -23,6 +23,12 @@ public class Order : BaseEntity
     public int? StoreId { get; set; }
     public Store? Store { get; set; }
 
+    public int? SourceLocationId { get; set; }
+    public StorageLocation? SourceLocation { get; set; }
+
+    public int? DestinationLocationId { get; set; }
+    public StorageLocation? DestinationLocation { get; set; }
+
     public int CreatedByUserId { get; set; }
     public User CreatedByUser { get; set; } = null!;
 

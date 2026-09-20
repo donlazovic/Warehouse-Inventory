@@ -24,8 +24,6 @@ builder.Services.AddControllers();
 
 var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()!;
 
-Console.WriteLine($"JWT key length pri startu: {jwtSettings.Key.Length}");
-
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
