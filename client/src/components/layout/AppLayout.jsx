@@ -6,6 +6,7 @@ import {
   Avatar,
   Badge,
   Box,
+  Button,
   Divider,
   Drawer,
   IconButton,
@@ -21,14 +22,16 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { usersApi } from "../../api/endpoints";
 import { useAuth } from "../../auth/AuthContext";
 import { sidebar } from "../../theme";
 import Logo from "../common/Logo";
 import { navigation } from "./navigation";
 
 const DRAWER_WIDTH = 256;
+const ACK_KEY = "skladisnik.ackPendingUsers";
 
 const initialsOf = (user) =>
   `${user?.firstName?.[0] ?? ""}${user?.lastName?.[0] ?? ""}`.toUpperCase() || "?";
@@ -39,6 +42,36 @@ export default function AppLayout() {
 
   const [userMenu, setUserMenu] = useState(null);
   const [bellAnchor, setBellAnchor] = useState(null);
+  const [pendingUsers, setPendingUsers] = useState(0);
+
+  const canSeeUsers = can("users.view");
+
+  useEffect(() => {
+    if (!canSeeUsers) return undefined;
+
+    const load = () => usersApi.pendingCount().then(setPendingUsers).catch(() => {});
+    load();
+    const timer = setInterval(load, 60000);
+    return () => clearInterval(timer);
+  }, [canSeeUsers]);
+
+  const [acknowledged, setAcknowledged] = useState(() => Number(localStorage.getItem(ACK_KEY) ?? 0));
+
+  useEffect(() => {
+    if (pendingUsers < acknowledged) {
+      setAcknowledged(pendingUsers);
+      localStorage.setItem(ACK_KEY, String(pendingUsers));
+    }
+  }, [pendingUsers, acknowledged]);
+
+  const unread = Math.max(0, pendingUsers - acknowledged);
+
+  const markAllRead = () => {
+    setAcknowledged(pendingUsers);
+    localStorage.setItem(ACK_KEY, String(pendingUsers));
+  };
+
+  const badges = { pendingUsers };
 
   const handleSignOut = async () => {
     setUserMenu(null);
@@ -113,6 +146,23 @@ export default function AppLayout() {
                         <item.icon fontSize="small" />
                       </ListItemIcon>
                       <ListItemText primary={item.label} primaryTypographyProps={{ fontSize: "0.875rem" }} />
+                      {item.badgeKey && badges[item.badgeKey] > 0 && (
+                        <Box
+                          sx={{
+                            minWidth: 20,
+                            px: 0.75,
+                            borderRadius: 10,
+                            bgcolor: "#B4541A",
+                            color: "#FFFFFF",
+                            fontSize: "0.7rem",
+                            fontWeight: 600,
+                            textAlign: "center",
+                            lineHeight: "18px",
+                          }}
+                        >
+                          {badges[item.badgeKey]}
+                        </Box>
+                      )}
                     </ListItemButton>
                   ))}
                 </List>
@@ -147,7 +197,7 @@ export default function AppLayout() {
           <Toolbar sx={{ justifyContent: "flex-end", gap: 0.5 }}>
             <Tooltip title="Obavestenja">
               <IconButton size="small" onClick={(event) => setBellAnchor(event.currentTarget)}>
-                <Badge color="warning" variant="dot" invisible>
+                <Badge color="warning" badgeContent={unread} invisible={unread === 0}>
                   <NotificationsNoneIcon fontSize="small" />
                 </Badge>
               </IconButton>
@@ -183,10 +233,39 @@ export default function AppLayout() {
           <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
             Obavestenja
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Nemate novih obavestenja. Ovde ce se pojavljivati upozorenja o niskim zalihama i
-            promenama statusa naloga.
-          </Typography>
+          {pendingUsers > 0 ? (
+            <Box
+              onClick={() => {
+                setBellAnchor(null);
+                navigate("/korisnici");
+              }}
+              sx={{
+                mt: 1,
+                p: 1.5,
+                borderRadius: 1,
+                bgcolor: unread > 0 ? "#FAF0E9" : "#F4F6F7",
+                cursor: "pointer",
+                "&:hover": { bgcolor: unread > 0 ? "#F5E4D7" : "#EDF0F1" },
+              }}
+            >
+              <Typography variant="body2" sx={{ fontWeight: unread > 0 ? 500 : 400 }}>
+                {pendingUsers === 1 ? "Jedan zahtev za pristup" : `${pendingUsers} zahteva za pristup`}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.78rem" }}>
+                Ceka vase odobrenje
+              </Typography>
+            </Box>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              Nemate novih obavestenja.
+            </Typography>
+          )}
+
+          {unread > 0 && (
+            <Button size="small" fullWidth sx={{ mt: 1.5 }} onClick={markAllRead}>
+              Oznaci sve kao procitano
+            </Button>
+          )}
         </Box>
       </Popover>
 

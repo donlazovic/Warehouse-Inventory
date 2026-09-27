@@ -28,7 +28,8 @@ public record UserDto(
     DateTime? ApprovedAt,
     string? ApprovedByName,
     DateTime? LastLoginAt,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    bool IsOwner);
 
 public record RegisterRequest(
     string FirstName,

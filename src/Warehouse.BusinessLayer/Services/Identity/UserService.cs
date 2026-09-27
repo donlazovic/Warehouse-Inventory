@@ -95,6 +95,8 @@ public class UserService : IUserService
         if (!await _uow.Repository<Role>().ExistsAsync(x => x.Id == request.RoleId, ct))
             throw new AppException("Izabrana uloga ne postoji.");
 
+        await EnsureCanGrantRoleAsync(request.RoleId, currentUserId, ct);
+
         var user = new User
         {
             FirstName = request.FirstName.Trim(),
@@ -122,6 +124,8 @@ public class UserService : IUserService
             .FirstOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new AppException("Korisnik nije pronadjen.", 404);
 
+        await EnsureCanManageAsync(user, currentUserId, ct);
+
         if (!await _uow.Repository<Role>().ExistsAsync(x => x.Id == request.RoleId, ct))
             throw new AppException("Izabrana uloga ne postoji.");
 
@@ -131,15 +135,19 @@ public class UserService : IUserService
         if (id == currentUserId && request.RoleId != user.RoleId)
             throw new AppException("Ne mozete promeniti sopstvenu ulogu.");
 
-        if (user.Role.Name == AdminRoleName && request.RoleId != user.RoleId)
-            await EnsureNotLastAdminAsync(id, ct);
+        if (request.RoleId != user.RoleId)
+            await EnsureCanGrantRoleAsync(request.RoleId, currentUserId, ct);
 
-        if (user.Role.Name == AdminRoleName && !request.IsActive)
+        if (user.Role.Name == AdminRoleName && (request.RoleId != user.RoleId || !request.IsActive))
             await EnsureNotLastAdminAsync(id, ct);
 
         user.FirstName = request.FirstName.Trim();
         user.LastName = request.LastName.Trim();
         user.RoleId = request.RoleId;
+
+        if (user.IsActive && !request.IsActive)
+            await RevokeTokensAsync(id, ct);
+
         user.IsActive = request.IsActive;
 
         repo.Update(user);
@@ -160,6 +168,8 @@ public class UserService : IUserService
 
         if (!await _uow.Repository<Role>().ExistsAsync(x => x.Id == request.RoleId, ct))
             throw new AppException("Izabrana uloga ne postoji.");
+
+        await EnsureCanGrantRoleAsync(request.RoleId, currentUserId, ct);
 
         user.RoleId = request.RoleId;
         user.IsActive = true;
@@ -186,21 +196,58 @@ public class UserService : IUserService
         await _uow.SaveChangesAsync(ct);
     }
 
-    public async Task ResetPasswordAsync(int id, ResetPasswordRequest request, CancellationToken ct = default)
+    public async Task ResetPasswordAsync(int id, ResetPasswordRequest request, int currentUserId, CancellationToken ct = default)
     {
+        if (id == currentUserId)
+            throw new AppException("Sopstvenu lozinku ne mozete resetovati ovde.");
+
         ValidatePassword(request.NewPassword);
 
         var repo = _uow.Repository<User>();
 
-        var user = await repo.Query(asNoTracking: false).FirstOrDefaultAsync(x => x.Id == id, ct)
+        var user = await repo.Query(asNoTracking: false)
+            .Include(x => x.Role)
+            .FirstOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new AppException("Korisnik nije pronadjen.", 404);
+
+        await EnsureCanManageAsync(user, currentUserId, ct);
 
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
         repo.Update(user);
 
+        await RevokeTokensAsync(id, ct);
+        await _uow.SaveChangesAsync(ct);
+    }
+
+    private async Task EnsureCanManageAsync(User target, int currentUserId, CancellationToken ct)
+    {
+        if (target.Id == currentUserId)
+            return;
+
+        if (target.IsOwner)
+            throw new AppException("Vlasnika sistema niko ne moze menjati.", 403);
+
+        if (target.Role.Name == AdminRoleName && !await IsOwnerAsync(currentUserId, ct))
+            throw new AppException("Samo vlasnik sistema moze menjati druge administratore.", 403);
+    }
+
+    private async Task EnsureCanGrantRoleAsync(int roleId, int currentUserId, CancellationToken ct)
+    {
+        var isAdminRole = await _uow.Repository<Role>()
+            .ExistsAsync(x => x.Id == roleId && x.Name == AdminRoleName, ct);
+
+        if (isAdminRole && !await IsOwnerAsync(currentUserId, ct))
+            throw new AppException("Samo vlasnik sistema moze dodeliti ulogu administratora.", 403);
+    }
+
+    private Task<bool> IsOwnerAsync(int userId, CancellationToken ct)
+        => _uow.Repository<User>().ExistsAsync(x => x.Id == userId && x.IsOwner, ct);
+
+    private async Task RevokeTokensAsync(int userId, CancellationToken ct)
+    {
         var tokens = await _uow.Repository<RefreshToken>()
             .Query(asNoTracking: false)
-            .Where(x => x.UserId == id && x.RevokedAt == null)
+            .Where(x => x.UserId == userId && x.RevokedAt == null)
             .ToListAsync(ct);
 
         foreach (var token in tokens)
@@ -208,8 +255,6 @@ public class UserService : IUserService
             token.RevokedAt = DateTime.UtcNow;
             _uow.Repository<RefreshToken>().Update(token);
         }
-
-        await _uow.SaveChangesAsync(ct);
     }
 
     private async Task EnsureNotLastAdminAsync(int excludedUserId, CancellationToken ct)
@@ -243,5 +288,6 @@ public class UserService : IUserService
             x.ApprovedAt,
             x.ApprovedByUser != null ? x.ApprovedByUser.FirstName + " " + x.ApprovedByUser.LastName : null,
             x.LastLoginAt,
-            x.CreatedAt));
+            x.CreatedAt,
+            x.IsOwner));
 }

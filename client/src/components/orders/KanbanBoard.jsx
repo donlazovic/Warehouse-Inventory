@@ -18,7 +18,7 @@ const allowedTransitions = {
   6: [],
 };
 
-export default function KanbanBoard({ columns, canMove, onMove, onOpen }) {
+export default function KanbanBoard({ columns, canMove, canMoveTo = () => true, onMove, onOpen }) {
   const [dragged, setDragged] = useState(null);
   const [hoveredStatus, setHoveredStatus] = useState(null);
   const [cancelledOpen, setCancelledOpen] = useState(false);
@@ -37,7 +37,9 @@ export default function KanbanBoard({ columns, canMove, onMove, onOpen }) {
   };
 
   const canDropOn = (status) =>
-    dragged ? allowedTransitions[dragged.status]?.includes(status) : false;
+    dragged
+      ? Boolean(allowedTransitions[dragged.status]?.includes(status) && canMoveTo(status))
+      : false;
 
   const dropProps = (status) => ({
     onDragOver: (event) => {

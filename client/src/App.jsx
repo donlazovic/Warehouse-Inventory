@@ -12,7 +12,13 @@ import NotFoundPage from "./pages/NotFoundPage";
 import OrdersPage from "./pages/OrdersPage";
 import PartnersPage from "./pages/PartnersPage";
 import ProductsPage from "./pages/ProductsPage";
+import RegisterPage from "./pages/RegisterPage";
+import UsersPage from "./pages/UsersPage";
 import theme from "./theme";
+
+const guarded = (permission, element) => (
+  <ProtectedRoute permission={permission}>{element}</ProtectedRoute>
+);
 
 export default function App() {
   return (
@@ -23,6 +29,7 @@ export default function App() {
           <AuthProvider>
             <Routes>
               <Route path="/prijava" element={<LoginPage />} />
+              <Route path="/registracija" element={<RegisterPage />} />
 
               <Route
                 element={
@@ -32,61 +39,13 @@ export default function App() {
                 }
               >
                 <Route path="/" element={<DashboardPage />} />
-
-                <Route
-                  path="/nalozi"
-                  element={
-                    <ProtectedRoute permission="orders.view">
-                      <OrdersPage />
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/skladista"
-                  element={
-                    <ProtectedRoute permission="stock.view">
-                      <LocationsPage />
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/proizvodi"
-                  element={
-                    <ProtectedRoute permission="products.view">
-                      <ProductsPage />
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/kategorije"
-                  element={
-                    <ProtectedRoute permission="categories.view">
-                      <CategoriesPage />
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/dobavljaci"
-                  element={
-                    <ProtectedRoute permission="suppliers.view">
-                      <PartnersPage kind="supplier" />
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/objekti"
-                  element={
-                    <ProtectedRoute permission="stores.view">
-                      <PartnersPage kind="store" />
-                    </ProtectedRoute>
-                  }
-                />
-
+                <Route path="/nalozi" element={guarded("orders.view", <OrdersPage />)} />
+                <Route path="/skladista" element={guarded("stock.view", <LocationsPage />)} />
+                <Route path="/proizvodi" element={guarded("products.view", <ProductsPage />)} />
+                <Route path="/kategorije" element={guarded("categories.view", <CategoriesPage />)} />
+                <Route path="/dobavljaci" element={guarded("suppliers.view", <PartnersPage kind="supplier" />)} />
+                <Route path="/objekti" element={guarded("stores.view", <PartnersPage kind="store" />)} />
+                <Route path="/korisnici" element={guarded("users.view", <UsersPage />)} />
                 <Route path="*" element={<NotFoundPage />} />
               </Route>
             </Routes>

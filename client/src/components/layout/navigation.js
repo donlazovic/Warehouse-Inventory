@@ -4,6 +4,7 @@ import GroupIcon from "@mui/icons-material/Group";
 import HistoryIcon from "@mui/icons-material/History";
 import HomeIcon from "@mui/icons-material/Home";
 import Inventory2Icon from "@mui/icons-material/Inventory2";
+import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import StorefrontIcon from "@mui/icons-material/Storefront";
 import WarehouseIcon from "@mui/icons-material/Warehouse";
@@ -26,7 +27,7 @@ export const navigation = [
   {
     heading: "Sifarnici",
     items: [
-      { label: "Proizvodi", to: "/proizvodi", icon: CategoryIcon, permission: "products.view" },
+      { label: "Proizvodi", to: "/proizvodi", icon: LocalOfferIcon, permission: "products.view" },
       { label: "Kategorije", to: "/kategorije", icon: CategoryIcon, permission: "categories.view" },
       { label: "Dobavljaci", to: "/dobavljaci", icon: LocalShippingIcon, permission: "suppliers.view" },
       { label: "Prodajni objekti", to: "/objekti", icon: StorefrontIcon, permission: "stores.view" },
@@ -34,6 +35,14 @@ export const navigation = [
   },
   {
     heading: "Administracija",
-    items: [{ label: "Korisnici i uloge", to: "/korisnici", icon: GroupIcon, permission: "users.view" }],
+    items: [
+      {
+        label: "Korisnici i uloge",
+        to: "/korisnici",
+        icon: GroupIcon,
+        permission: "users.view",
+        badgeKey: "pendingUsers",
+      },
+    ],
   },
 ];

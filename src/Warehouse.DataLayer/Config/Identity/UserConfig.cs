@@ -16,11 +16,13 @@ internal class UserConfig : IEntityTypeConfiguration<User>
         builder.Property(x => x.Email).HasMaxLength(200).IsRequired();
         builder.Property(x => x.PasswordHash).HasMaxLength(500).IsRequired();
         builder.Property(x => x.IsActive).HasDefaultValue(true);
+        builder.Property(x => x.IsOwner).HasDefaultValue(false);
 
         builder.Ignore(x => x.IsPendingApproval);
         builder.Ignore(x => x.CanSignIn);
 
         builder.HasIndex(x => x.Email).IsUnique();
+        builder.HasIndex(x => x.IsOwner).IsUnique().HasFilter("[IsOwner] = 1");
 
         builder.HasOne(x => x.Role)
                .WithMany(x => x.Users)

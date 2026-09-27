@@ -128,5 +128,5 @@ public class AuthService : IAuthService
             .ToList();
 
     private static CurrentUserDto MapCurrentUser(User user, IReadOnlyList<string> permissions)
-        => new(user.Id, user.FirstName, user.LastName, user.Email, user.Role.Name, permissions);
+        => new(user.Id, user.FirstName, user.LastName, user.Email, user.Role.Name, permissions, user.IsOwner);
 }

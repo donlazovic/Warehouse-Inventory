@@ -281,6 +281,7 @@ export default function OrdersPage() {
           <KanbanBoard
             columns={kanbanColumns}
             canMove={can("orders.update")}
+            canMoveTo={(status) => can(permissionForStatus(status))}
             onMove={(order, status) => setStatusRequest({ order, status })}
             onOpen={openDetail}
           />

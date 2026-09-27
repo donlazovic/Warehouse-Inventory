@@ -46,3 +46,22 @@ export const stockApi = {
   adjust: (payload) => unwrap(api.post("/api/stock/adjust", payload)),
   setLimits: (id, payload) => unwrap(api.put(`/api/stock/${id}/limits`, payload)),
 };
+
+export const usersApi = {
+  list: (params) => unwrap(api.get("/api/users", { params })),
+  byId: (id) => unwrap(api.get(`/api/users/${id}`)),
+  create: (payload) => unwrap(api.post("/api/users", payload)),
+  update: (id, payload) => unwrap(api.put(`/api/users/${id}`, payload)),
+  register: (payload) => unwrap(api.post("/api/users/register", payload)),
+  approve: (id, roleId) => unwrap(api.post(`/api/users/${id}/approve`, { roleId })),
+  reject: (id) => unwrap(api.delete(`/api/users/${id}/reject`)),
+  resetPassword: (id, newPassword) => unwrap(api.put(`/api/users/${id}/password`, { newPassword })),
+  pendingCount: () => unwrap(api.get("/api/users/pending-count")).then((data) => data.count),
+};
+
+export const rolesApi = {
+  list: () => unwrap(api.get("/api/roles")),
+  byId: (id) => unwrap(api.get(`/api/roles/${id}`)),
+  tree: () => unwrap(api.get("/api/roles/permission-tree")),
+  update: (id, payload) => unwrap(api.put(`/api/roles/${id}`, payload)),
+};

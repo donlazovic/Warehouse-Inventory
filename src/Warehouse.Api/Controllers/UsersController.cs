@@ -75,7 +75,7 @@ public class UsersController : ControllerBase
     [HasPermission("users.update")]
     public async Task<IActionResult> ResetPassword(int id, ResetPasswordRequest request, CancellationToken ct)
     {
-        await _service.ResetPasswordAsync(id, request, ct);
+        await _service.ResetPasswordAsync(id, request, User.GetUserId(), ct);
         return NoContent();
     }
 }

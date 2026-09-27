@@ -16,4 +16,5 @@ public record CurrentUserDto(
     string LastName,
     string Email,
     string Role,
-    IReadOnlyList<string> Permissions);
+    IReadOnlyList<string> Permissions,
+    bool IsOwner);

@@ -23,6 +23,8 @@ public static class DatabaseSeederExtensions
             Email = "admin@warehouse.local",
             PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin123!"),
             IsActive = true,
+            IsOwner = true,
+            ApprovedAt = DateTime.UtcNow,
             RoleId = adminRole.Id
         });
 
