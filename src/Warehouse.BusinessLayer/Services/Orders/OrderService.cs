@@ -19,7 +19,8 @@ public class OrderService : IOrderService
         OrderStatus.PendingApproval,
         OrderStatus.Approved,
         OrderStatus.InProgress,
-        OrderStatus.Completed
+        OrderStatus.Completed,
+        OrderStatus.Cancelled
     };
 
     private readonly IUnitOfWork _uow;

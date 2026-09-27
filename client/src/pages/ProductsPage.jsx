@@ -17,9 +17,12 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { categoriesApi, productsApi } from "../api/endpoints";
 import { useAuth } from "../auth/AuthContext";
+import ConfirmDialog from "../components/common/ConfirmDialog";
 import DataTable from "../components/common/DataTable";
 import PageHeader from "../components/common/PageHeader";
-import { useToast } from "../components/common/Toast";
+import RowActions from "../components/common/RowActions";
+import ProductFormDialog from "../components/forms/ProductFormDialog";
+import useCrudPage from "../hooks/useCrudPage";
 import usePagedQuery from "../hooks/usePagedQuery";
 import { monoFont } from "../theme";
 import { formatMoney, formatQuantity, unitLabels } from "../utils/format";
@@ -34,11 +37,16 @@ const stockStatusOptions = [
 
 export default function ProductsPage() {
   const { can } = useAuth();
-  const toast = useToast();
   const [categories, setCategories] = useState([]);
 
   const fetcher = useCallback((params) => productsApi.list(params), []);
   const query = usePagedQuery(fetcher, { sortBy: "name", sortDesc: false });
+
+  const crud = useCrudPage({
+    api: productsApi,
+    reload: query.reload,
+    labels: { deleted: "Proizvod je obrisan." },
+  });
 
   useEffect(() => {
     categoriesApi
@@ -47,13 +55,12 @@ export default function ProductsPage() {
       .catch(() => setCategories([]));
   }, []);
 
-  const toggleFavorite = async (event, product) => {
-    event.stopPropagation();
+  const toggleFavorite = async (product) => {
     try {
       await productsApi.toggleFavorite(product.id);
       query.reload();
     } catch (err) {
-      toast.error(err.message);
+      crud.toast.error(err.message);
     }
   };
 
@@ -63,7 +70,13 @@ export default function ProductsPage() {
       headerName: "",
       width: 48,
       render: (row) => (
-        <IconButton size="small" onClick={(event) => toggleFavorite(event, row)}>
+        <IconButton
+          size="small"
+          onClick={(event) => {
+            event.stopPropagation();
+            toggleFavorite(row);
+          }}
+        >
           {row.isFavorite ? (
             <StarIcon fontSize="small" sx={{ color: "#B4541A" }} />
           ) : (
@@ -88,7 +101,6 @@ export default function ProductsPage() {
       field: "totalStock",
       headerName: "Na stanju",
       align: "right",
-      sortable: false,
       render: (row) => {
         const below = row.totalStock < row.minStock;
         return (
@@ -125,12 +137,26 @@ export default function ProductsPage() {
     {
       field: "isActive",
       headerName: "Status",
-      render: (row) =>
-        row.isActive ? (
-          <Chip size="small" label="Aktivan" color="success" variant="outlined" />
-        ) : (
-          <Chip size="small" label="Neaktivan" variant="outlined" />
-        ),
+      render: (row) => (
+        <Chip
+          size="small"
+          variant="outlined"
+          color={row.isActive ? "success" : "default"}
+          label={row.isActive ? "Aktivan" : "Neaktivan"}
+        />
+      ),
+    },
+    {
+      field: "actions",
+      headerName: "",
+      align: "right",
+      width: 96,
+      render: (row) => (
+        <RowActions
+          onEdit={can("products.update") ? () => crud.openEdit(row) : undefined}
+          onDelete={can("products.delete") ? () => crud.setDeleting(row) : undefined}
+        />
+      ),
     },
   ];
 
@@ -141,7 +167,9 @@ export default function ProductsPage() {
         description="Katalog robe sa trenutnim stanjem zaliha zbirno po svim lokacijama."
         actions={
           can("products.create") && (
-            <Button variant="contained">Dodaj proizvod</Button>
+            <Button variant="contained" onClick={crud.openCreate}>
+              Dodaj proizvod
+            </Button>
           )
         }
       />
@@ -196,11 +224,7 @@ export default function ProductsPage() {
         </Stack>
       </Paper>
 
-      {query.error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {query.error}
-        </Alert>
-      )}
+      {query.error && <Alert severity="error" sx={{ mb: 2 }}>{query.error}</Alert>}
 
       <DataTable
         columns={columns}
@@ -221,6 +245,29 @@ export default function ProductsPage() {
       <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
         Kolicine ispod minimalne zalihe prikazane su naglaseno.
       </Typography>
+
+      <ProductFormDialog
+        open={crud.formOpen}
+        product={crud.editing}
+        categories={categories}
+        onClose={crud.closeForm}
+        onSaved={(message) => {
+          crud.toast.success(message);
+          crud.closeForm();
+          query.reload();
+        }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(crud.deleting)}
+        title="Brisanje proizvoda"
+        message={`Da li zelite da obrisete "${crud.deleting?.name}"? Ako proizvod ima zalihe ili istoriju u nalozima, brisanje nece biti moguce.`}
+        confirmLabel="Obrisi"
+        destructive
+        loading={crud.busy}
+        onConfirm={crud.confirmDelete}
+        onClose={() => crud.setDeleting(null)}
+      />
     </Box>
   );
 }

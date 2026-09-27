@@ -2,7 +2,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Warehouse.BusinessLayer.Services.Auth;
 using Warehouse.BusinessLayer.Services.Catalog;
+using Warehouse.BusinessLayer.Services.Identity;
 using Warehouse.BusinessLayer.Services.Inventory;
+using Warehouse.BusinessLayer.Services.Orders;
 using Warehouse.BusinessLayer.Services.Partners;
 using Warehouse.BusinessLayer.Settings;
 
@@ -21,6 +23,10 @@ public static class DependencyInjection
         services.AddScoped<ISupplierService, SupplierService>();
         services.AddScoped<IStoreService, StoreService>();
         services.AddScoped<IStorageLocationService, StorageLocationService>();
+        services.AddScoped<IStockService, StockService>();
+        services.AddScoped<IOrderService, OrderService>();
+        services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IRoleService, RoleService>();
 
         return services;
     }

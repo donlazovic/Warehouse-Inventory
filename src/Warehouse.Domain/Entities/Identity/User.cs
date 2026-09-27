@@ -12,9 +12,16 @@ public class User : BaseEntity
     public bool IsActive { get; set; } = true;
     public DateTime? LastLoginAt { get; set; }
 
+    public DateTime? ApprovedAt { get; set; }
+    public int? ApprovedByUserId { get; set; }
+    public User? ApprovedByUser { get; set; }
+
     public int RoleId { get; set; }
     public Role Role { get; set; } = null!;
 
     public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
     public ICollection<UserFavoriteProduct> FavoriteProducts { get; set; } = new List<UserFavoriteProduct>();
+
+    public bool IsPendingApproval => ApprovedAt is null;
+    public bool CanSignIn => IsActive && ApprovedAt is not null;
 }

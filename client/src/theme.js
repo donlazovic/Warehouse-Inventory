@@ -5,6 +5,16 @@ const pine = "#1F5F4B";
 const rust = "#B4541A";
 const clay = "#9B2C2C";
 
+export const sidebar = {
+  bg: "#0E1A15",
+  bgHover: "#17302A",
+  bgActive: "#1B3A2F",
+  text: "#B9C5BF",
+  textMuted: "#6F8079",
+  textStrong: "#FFFFFF",
+  border: "#1C2F28",
+};
+
 export const statusColors = {
   1: "#6B7280",
   2: "#B4541A",
@@ -12,6 +22,15 @@ export const statusColors = {
   4: "#1D5A87",
   5: "#14532D",
   6: "#9B2C2C",
+};
+
+export const statusTints = {
+  1: "#F1F2F4",
+  2: "#FAF0E9",
+  3: "#EDF4F1",
+  4: "#EDF2F7",
+  5: "#ECF2EE",
+  6: "#F8EDED",
 };
 
 const theme = createTheme({

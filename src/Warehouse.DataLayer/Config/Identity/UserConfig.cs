@@ -17,11 +17,19 @@ internal class UserConfig : IEntityTypeConfiguration<User>
         builder.Property(x => x.PasswordHash).HasMaxLength(500).IsRequired();
         builder.Property(x => x.IsActive).HasDefaultValue(true);
 
+        builder.Ignore(x => x.IsPendingApproval);
+        builder.Ignore(x => x.CanSignIn);
+
         builder.HasIndex(x => x.Email).IsUnique();
 
         builder.HasOne(x => x.Role)
                .WithMany(x => x.Users)
                .HasForeignKey(x => x.RoleId)
                .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(x => x.ApprovedByUser)
+               .WithMany()
+               .HasForeignKey(x => x.ApprovedByUserId)
+               .OnDelete(DeleteBehavior.NoAction);
     }
 }

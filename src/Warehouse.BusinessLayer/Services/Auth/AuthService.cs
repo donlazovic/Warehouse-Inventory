@@ -33,6 +33,9 @@ public class AuthService : IAuthService
         if (user is null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             throw new AppException("Pogresan email ili lozinka.", 401);
 
+        if (user.ApprovedAt is null)
+            throw new AppException("Nalog jos nije odobren od strane administratora.", 403);
+
         if (!user.IsActive)
             throw new AppException("Korisnicki nalog je deaktiviran.", 403);
 
@@ -53,6 +56,9 @@ public class AuthService : IAuthService
 
         if (stored is null || !stored.IsActive)
             throw new AppException("Refresh token nije validan.", 401);
+
+        if (stored.User.ApprovedAt is null || !stored.User.IsActive)
+            throw new AppException("Nalog vise nije aktivan.", 403);
 
         stored.RevokedAt = DateTime.UtcNow;
         tokenRepo.Update(stored);

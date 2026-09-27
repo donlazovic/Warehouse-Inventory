@@ -1,0 +1,247 @@
+using Microsoft.EntityFrameworkCore;
+using Warehouse.BusinessLayer.Common;
+using Warehouse.BusinessLayer.DTOs.Identity;
+using Warehouse.DataLayer.Repositories;
+using Warehouse.Domain.Entities.Identity;
+
+namespace Warehouse.BusinessLayer.Services.Identity;
+
+public class UserService : IUserService
+{
+    private const string AdminRoleName = "Admin";
+    private const string DefaultPendingRoleName = "Viewer";
+    private const int MinPasswordLength = 8;
+
+    private readonly IUnitOfWork _uow;
+
+    public UserService(IUnitOfWork uow) => _uow = uow;
+
+    public async Task<PagedResult<UserDto>> GetPagedAsync(UserFilterRequest filter, CancellationToken ct = default)
+    {
+        var query = _uow.Repository<User>().Query();
+
+        if (!string.IsNullOrWhiteSpace(filter.Search))
+        {
+            var term = filter.Search.Trim();
+            query = query.Where(x => x.FirstName.Contains(term)
+                                  || x.LastName.Contains(term)
+                                  || x.Email.Contains(term));
+        }
+
+        if (filter.RoleId.HasValue)
+            query = query.Where(x => x.RoleId == filter.RoleId);
+
+        query = filter.Status switch
+        {
+            UserStatusFilter.Pending => query.Where(x => x.ApprovedAt == null),
+            UserStatusFilter.Active => query.Where(x => x.ApprovedAt != null && x.IsActive),
+            UserStatusFilter.Inactive => query.Where(x => x.ApprovedAt != null && !x.IsActive),
+            _ => query
+        };
+
+        query = filter.SortBy?.ToLowerInvariant() switch
+        {
+            "email" => query.ApplySort(x => x.Email, filter.SortDesc),
+            "role" => query.ApplySort(x => x.Role.Name, filter.SortDesc),
+            "createdat" => query.ApplySort(x => x.CreatedAt, filter.SortDesc),
+            _ => query.ApplySort(x => x.LastName, filter.SortDesc)
+        };
+
+        return await Project(query).ToPagedResultAsync(filter, ct);
+    }
+
+    public async Task<UserDto> GetByIdAsync(int id, CancellationToken ct = default)
+        => await Project(_uow.Repository<User>().Query().Where(x => x.Id == id)).FirstOrDefaultAsync(ct)
+           ?? throw new AppException("Korisnik nije pronadjen.", 404);
+
+    public Task<int> GetPendingCountAsync(CancellationToken ct = default)
+        => _uow.Repository<User>().Query().CountAsync(x => x.ApprovedAt == null, ct);
+
+    public async Task RegisterAsync(RegisterRequest request, CancellationToken ct = default)
+    {
+        var email = NormalizeEmail(request.Email);
+        ValidatePassword(request.Password);
+
+        if (await _uow.Repository<User>().ExistsAsync(x => x.Email == email, ct))
+            return;
+
+        var pendingRole = await _uow.Repository<Role>()
+            .Query()
+            .FirstOrDefaultAsync(x => x.Name == DefaultPendingRoleName, ct)
+            ?? throw new AppException("Sistemska uloga za nove naloge ne postoji.", 500);
+
+        await _uow.Repository<User>().AddAsync(new User
+        {
+            FirstName = request.FirstName.Trim(),
+            LastName = request.LastName.Trim(),
+            Email = email,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+            RoleId = pendingRole.Id,
+            IsActive = true,
+            ApprovedAt = null
+        }, ct);
+
+        await _uow.SaveChangesAsync(ct);
+    }
+
+    public async Task<UserDto> CreateAsync(CreateUserRequest request, int currentUserId, CancellationToken ct = default)
+    {
+        var email = NormalizeEmail(request.Email);
+        ValidatePassword(request.Password);
+
+        if (await _uow.Repository<User>().ExistsAsync(x => x.Email == email, ct))
+            throw new AppException("Korisnik sa tom email adresom vec postoji.");
+
+        if (!await _uow.Repository<Role>().ExistsAsync(x => x.Id == request.RoleId, ct))
+            throw new AppException("Izabrana uloga ne postoji.");
+
+        var user = new User
+        {
+            FirstName = request.FirstName.Trim(),
+            LastName = request.LastName.Trim(),
+            Email = email,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+            RoleId = request.RoleId,
+            IsActive = true,
+            ApprovedAt = DateTime.UtcNow,
+            ApprovedByUserId = currentUserId
+        };
+
+        await _uow.Repository<User>().AddAsync(user, ct);
+        await _uow.SaveChangesAsync(ct);
+
+        return await GetByIdAsync(user.Id, ct);
+    }
+
+    public async Task<UserDto> UpdateAsync(int id, UpdateUserRequest request, int currentUserId, CancellationToken ct = default)
+    {
+        var repo = _uow.Repository<User>();
+
+        var user = await repo.Query(asNoTracking: false)
+            .Include(x => x.Role)
+            .FirstOrDefaultAsync(x => x.Id == id, ct)
+            ?? throw new AppException("Korisnik nije pronadjen.", 404);
+
+        if (!await _uow.Repository<Role>().ExistsAsync(x => x.Id == request.RoleId, ct))
+            throw new AppException("Izabrana uloga ne postoji.");
+
+        if (id == currentUserId && !request.IsActive)
+            throw new AppException("Ne mozete deaktivirati sopstveni nalog.");
+
+        if (id == currentUserId && request.RoleId != user.RoleId)
+            throw new AppException("Ne mozete promeniti sopstvenu ulogu.");
+
+        if (user.Role.Name == AdminRoleName && request.RoleId != user.RoleId)
+            await EnsureNotLastAdminAsync(id, ct);
+
+        if (user.Role.Name == AdminRoleName && !request.IsActive)
+            await EnsureNotLastAdminAsync(id, ct);
+
+        user.FirstName = request.FirstName.Trim();
+        user.LastName = request.LastName.Trim();
+        user.RoleId = request.RoleId;
+        user.IsActive = request.IsActive;
+
+        repo.Update(user);
+        await _uow.SaveChangesAsync(ct);
+
+        return await GetByIdAsync(id, ct);
+    }
+
+    public async Task<UserDto> ApproveAsync(int id, ApproveUserRequest request, int currentUserId, CancellationToken ct = default)
+    {
+        var repo = _uow.Repository<User>();
+
+        var user = await repo.Query(asNoTracking: false).FirstOrDefaultAsync(x => x.Id == id, ct)
+            ?? throw new AppException("Korisnik nije pronadjen.", 404);
+
+        if (user.ApprovedAt is not null)
+            throw new AppException("Korisnik je vec odobren.");
+
+        if (!await _uow.Repository<Role>().ExistsAsync(x => x.Id == request.RoleId, ct))
+            throw new AppException("Izabrana uloga ne postoji.");
+
+        user.RoleId = request.RoleId;
+        user.IsActive = true;
+        user.ApprovedAt = DateTime.UtcNow;
+        user.ApprovedByUserId = currentUserId;
+
+        repo.Update(user);
+        await _uow.SaveChangesAsync(ct);
+
+        return await GetByIdAsync(id, ct);
+    }
+
+    public async Task RejectAsync(int id, CancellationToken ct = default)
+    {
+        var repo = _uow.Repository<User>();
+
+        var user = await repo.Query(asNoTracking: false).FirstOrDefaultAsync(x => x.Id == id, ct)
+            ?? throw new AppException("Korisnik nije pronadjen.", 404);
+
+        if (user.ApprovedAt is not null)
+            throw new AppException("Odobren nalog se ne moze odbiti. Deaktivirajte ga umesto toga.");
+
+        repo.Remove(user);
+        await _uow.SaveChangesAsync(ct);
+    }
+
+    public async Task ResetPasswordAsync(int id, ResetPasswordRequest request, CancellationToken ct = default)
+    {
+        ValidatePassword(request.NewPassword);
+
+        var repo = _uow.Repository<User>();
+
+        var user = await repo.Query(asNoTracking: false).FirstOrDefaultAsync(x => x.Id == id, ct)
+            ?? throw new AppException("Korisnik nije pronadjen.", 404);
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        repo.Update(user);
+
+        var tokens = await _uow.Repository<RefreshToken>()
+            .Query(asNoTracking: false)
+            .Where(x => x.UserId == id && x.RevokedAt == null)
+            .ToListAsync(ct);
+
+        foreach (var token in tokens)
+        {
+            token.RevokedAt = DateTime.UtcNow;
+            _uow.Repository<RefreshToken>().Update(token);
+        }
+
+        await _uow.SaveChangesAsync(ct);
+    }
+
+    private async Task EnsureNotLastAdminAsync(int excludedUserId, CancellationToken ct)
+    {
+        var remainingAdmins = await _uow.Repository<User>()
+            .Query()
+            .CountAsync(x => x.Role.Name == AdminRoleName && x.IsActive && x.Id != excludedUserId, ct);
+
+        if (remainingAdmins == 0)
+            throw new AppException("Sistem mora imati bar jednog aktivnog administratora.");
+    }
+
+    private static string NormalizeEmail(string email) => email.Trim().ToLowerInvariant();
+
+    private static void ValidatePassword(string password)
+    {
+        if (string.IsNullOrWhiteSpace(password) || password.Length < MinPasswordLength)
+            throw new AppException($"Lozinka mora imati najmanje {MinPasswordLength} karaktera.");
+    }
+
+    private static IQueryable<UserDto> Project(IQueryable<User> query)
+        => query.Select(x => new UserDto(
+            x.Id,
+            x.FirstName,
+            x.LastName,
+            x.Email,
+            x.RoleId,
+            x.Role.Name,
+            x.IsActive,
+            x.ApprovedAt == null,
+            x.ApprovedAt,
+            x.ApprovedByUser != null ? x.ApprovedByUser.FirstName + " " + x.ApprovedByUser.LastName : null,
+            x.LastLoginAt,
+            x.CreatedAt));
+}

@@ -1,7 +1,8 @@
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import CategoryIcon from "@mui/icons-material/Category";
-import DashboardIcon from "@mui/icons-material/Dashboard";
+import GroupIcon from "@mui/icons-material/Group";
 import HistoryIcon from "@mui/icons-material/History";
+import HomeIcon from "@mui/icons-material/Home";
 import Inventory2Icon from "@mui/icons-material/Inventory2";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import StorefrontIcon from "@mui/icons-material/Storefront";
@@ -9,27 +10,30 @@ import WarehouseIcon from "@mui/icons-material/Warehouse";
 
 export const navigation = [
   {
-    heading: "Pregled",
-    items: [{ label: "Kontrolna tabla", to: "/", icon: DashboardIcon, permission: "reports.view" }],
+    items: [
+      { label: "Pocetna", to: "/", icon: HomeIcon },
+      { label: "Nalozi", to: "/nalozi", icon: AssignmentIcon, permission: "orders.view" },
+    ],
   },
   {
-    heading: "Roba",
+    heading: "Zalihe",
     items: [
-      { label: "Proizvodi", to: "/proizvodi", icon: Inventory2Icon, permission: "products.view" },
-      { label: "Kategorije", to: "/kategorije", icon: CategoryIcon, permission: "categories.view" },
-      { label: "Zalihe", to: "/zalihe", icon: WarehouseIcon, permission: "stock.view" },
+      { label: "Stanje zaliha", to: "/zalihe", icon: Inventory2Icon, permission: "stock.view" },
+      { label: "Skladista", to: "/skladista", icon: WarehouseIcon, permission: "stock.view" },
       { label: "Kretanje robe", to: "/kretanja", icon: HistoryIcon, permission: "stock.view" },
     ],
   },
   {
-    heading: "Nalozi",
-    items: [{ label: "Nalozi", to: "/nalozi", icon: AssignmentIcon, permission: "orders.view" }],
-  },
-  {
-    heading: "Partneri",
+    heading: "Sifarnici",
     items: [
+      { label: "Proizvodi", to: "/proizvodi", icon: CategoryIcon, permission: "products.view" },
+      { label: "Kategorije", to: "/kategorije", icon: CategoryIcon, permission: "categories.view" },
       { label: "Dobavljaci", to: "/dobavljaci", icon: LocalShippingIcon, permission: "suppliers.view" },
       { label: "Prodajni objekti", to: "/objekti", icon: StorefrontIcon, permission: "stores.view" },
     ],
+  },
+  {
+    heading: "Administracija",
+    items: [{ label: "Korisnici i uloge", to: "/korisnici", icon: GroupIcon, permission: "users.view" }],
   },
 ];
