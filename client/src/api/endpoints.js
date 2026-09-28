@@ -1,4 +1,5 @@
 import api from "./client";
+import { fetchBlob } from "./files";
 
 const unwrap = (promise) => promise.then((res) => res.data);
 
@@ -75,3 +76,23 @@ export const reportsApi = {
   supplierActivity: (supplierId, params) =>
     unwrap(api.get(`/api/reports/supplier-activity/${supplierId}`, { params })),
 };
+
+const withFormat = (format, params = {}) => ({ ...params, format: format === "pdf" ? "Pdf" : "Xlsx" });
+
+export const exportsApi = {
+  orderDocument: (id) => fetchBlob(`/api/exports/orders/${id}/document`),
+  orders: (format, params) => fetchBlob("/api/exports/orders", withFormat(format, params)),
+  stock: (format, params) => fetchBlob("/api/exports/stock", withFormat(format, params)),
+  movements: (format, params) => fetchBlob("/api/exports/movements", withFormat(format, params)),
+  turnover: (format, params) => fetchBlob("/api/exports/reports/turnover", withFormat(format, params)),
+  snapshot: (format, params) => fetchBlob("/api/exports/reports/snapshot", withFormat(format, params)),
+  supplierActivity: (supplierId, format, params) =>
+    fetchBlob(`/api/exports/reports/supplier-activity/${supplierId}`, withFormat(format, params)),
+};
+
+export const exportParams = (filter) =>
+  Object.fromEntries(
+    Object.entries(filter).filter(
+      ([key, value]) => !["page", "pageSize"].includes(key) && value !== "" && value != null
+    )
+  );

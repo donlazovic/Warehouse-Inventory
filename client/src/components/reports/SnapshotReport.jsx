@@ -1,6 +1,8 @@
 import { Alert, Box, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
-import { reportsApi } from "../../api/endpoints";
+import { exportsApi, reportsApi } from "../../api/endpoints";
+import { useAuth } from "../../auth/AuthContext";
+import ExportMenu from "../common/ExportMenu";
 import { monoFont } from "../../theme";
 import { endOfDayIso, formatMoney, toDateInput, unitLabels } from "../../utils/format";
 import ReportTable from "../common/ReportTable";
@@ -9,6 +11,7 @@ import Quantity from "./Quantity";
 import { CategorySelect, cleanParams, DateField, FilterBar, LocationSelect } from "./ReportFilters";
 
 export default function SnapshotReport({ locations, categories }) {
+  const { can } = useAuth();
   const [filter, setFilter] = useState({ at: toDateInput(new Date()), locationId: "", categoryId: "" });
   const [report, setReport] = useState(null);
   const [error, setError] = useState(null);
@@ -94,6 +97,19 @@ export default function SnapshotReport({ locations, categories }) {
         <DateField label="Stanje na dan" value={filter.at} onChange={set("at")} />
         <LocationSelect locations={locations} value={filter.locationId} onChange={set("locationId")} />
         <CategorySelect categories={categories} value={filter.categoryId} onChange={set("categoryId")} />
+        <Box sx={{ flexGrow: 1 }} />
+        {can("reports.export") && (
+          <ExportMenu
+            fileName={`stanje-${filter.at}`}
+            previewTitle="Stanje zaliha na dan"
+            load={(format) =>
+              exportsApi.snapshot(
+                format,
+                cleanParams({ at: endOfDayIso(filter.at), locationId: filter.locationId, categoryId: filter.categoryId })
+              )
+            }
+          />
+        )}
       </FilterBar>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}

@@ -1,3 +1,5 @@
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import { useState } from "react";
 import {
   Box,
   Button,
@@ -15,7 +17,9 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
+import { exportsApi } from "../../api/endpoints";
 import { monoFont, statusColors } from "../../theme";
+import PdfPreviewDialog from "../common/PdfPreviewDialog";
 import {
   formatDateTime,
   formatMoney,
@@ -35,9 +39,12 @@ const Field = ({ label, value }) => (
 );
 
 export default function OrderDetailDialog({ detail, canMoveTo, onChangeStatus, onEdit, onClose }) {
+  const [documentOpen, setDocumentOpen] = useState(false);
+
   if (!detail) return null;
 
   const { order, items, history, allowedNextStatuses } = detail;
+  const documentName = order.orderType === 1 ? "Prijemnica" : "Otpremnica";
 
   return (
     <Dialog open onClose={onClose} maxWidth="md" fullWidth>
@@ -159,11 +166,14 @@ export default function OrderDetailDialog({ detail, canMoveTo, onChangeStatus, o
       </DialogContent>
 
       <DialogActions sx={{ px: 3, py: 2, justifyContent: "space-between" }}>
-        <Box>
+        <Stack direction="row" spacing={1}>
+          <Button startIcon={<DescriptionOutlinedIcon />} onClick={() => setDocumentOpen(true)}>
+            {documentName}
+          </Button>
           {order.status === 1 && onEdit && (
             <Button onClick={() => onEdit(detail)}>Izmeni nalog</Button>
           )}
-        </Box>
+        </Stack>
 
         <Stack direction="row" spacing={1}>
           <Button onClick={onClose}>Zatvori</Button>
@@ -181,6 +191,14 @@ export default function OrderDetailDialog({ detail, canMoveTo, onChangeStatus, o
             ))}
         </Stack>
       </DialogActions>
+
+      <PdfPreviewDialog
+        open={documentOpen}
+        title={`${documentName} — ${order.orderNumber}`}
+        fileName={`${order.orderNumber}.pdf`}
+        load={() => exportsApi.orderDocument(order.id)}
+        onClose={() => setDocumentOpen(false)}
+      />
     </Dialog>
   );
 }

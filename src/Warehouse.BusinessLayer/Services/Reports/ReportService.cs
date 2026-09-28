@@ -26,8 +26,10 @@ public class ReportService : IReportService
         var orders = _uow.Repository<Order>().Query();
 
         var now = DateTime.UtcNow;
-        var monthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-        var previousMonthStart = monthStart.AddMonths(-1);
+        var localNow = DateTime.Now;
+        var localMonthStart = new DateTime(localNow.Year, localNow.Month, 1, 0, 0, 0, DateTimeKind.Local);
+        var monthStart = localMonthStart.ToUniversalTime();
+        var previousMonthStart = localMonthStart.AddMonths(-1).ToUniversalTime();
 
         var stockValue = await stock.SumAsync(x => (decimal?)(x.Quantity * x.Product.Price), ct) ?? 0m;
 
@@ -64,17 +66,21 @@ public class ReportService : IReportService
             issuedThisMonth,
             issuedLastMonth);
 
-        var since = now.Date.AddDays(-(DashboardDays - 1));
+        var sinceLocal = localNow.Date.AddDays(-(DashboardDays - 1));
+        var since = DateTime.SpecifyKind(sinceLocal, DateTimeKind.Local).ToUniversalTime();
 
-        var flowRaw = await movements
+        var flowRows = await movements
             .Where(x => x.CreatedAt >= since)
-            .Select(x => new { Day = x.CreatedAt.Date, x.MovementType, Value = x.Quantity * x.Product.Price })
-            .GroupBy(x => new { x.Day, x.MovementType })
-            .Select(g => new { g.Key.Day, g.Key.MovementType, Value = g.Sum(v => v.Value) })
+            .Select(x => new { x.CreatedAt, x.MovementType, Value = x.Quantity * x.Product.Price })
             .ToListAsync(ct);
 
+        var flowRaw = flowRows
+            .GroupBy(x => new { Day = x.CreatedAt.ToLocalTime().Date, x.MovementType })
+            .Select(g => new { g.Key.Day, g.Key.MovementType, Value = g.Sum(v => v.Value) })
+            .ToList();
+
         var dailyFlow = Enumerable.Range(0, DashboardDays)
-            .Select(offset => since.AddDays(offset))
+            .Select(offset => sinceLocal.AddDays(offset))
             .Select(day => new DailyFlowDto(
                 day,
                 flowRaw.Where(x => x.Day == day && x.MovementType is MovementType.Inbound or MovementType.InitialStock).Sum(x => x.Value),

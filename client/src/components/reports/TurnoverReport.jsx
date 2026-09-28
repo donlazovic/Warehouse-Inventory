@@ -1,6 +1,8 @@
 import { Alert, Box, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
-import { reportsApi } from "../../api/endpoints";
+import { exportsApi, reportsApi } from "../../api/endpoints";
+import { useAuth } from "../../auth/AuthContext";
+import ExportMenu from "../common/ExportMenu";
 import { monoFont } from "../../theme";
 import { daysAgoInput, endOfDayIso, formatMoney, startOfDayIso, toDateInput, unitLabels } from "../../utils/format";
 import ReportTable from "../common/ReportTable";
@@ -9,6 +11,7 @@ import Quantity from "./Quantity";
 import { CategorySelect, cleanParams, DateField, FilterBar, LocationSelect } from "./ReportFilters";
 
 export default function TurnoverReport({ locations, categories }) {
+  const { can } = useAuth();
   const [filter, setFilter] = useState({
     from: daysAgoInput(30),
     to: toDateInput(new Date()),
@@ -39,6 +42,15 @@ export default function TurnoverReport({ locations, categories }) {
   }, [filter]);
 
   const set = (field) => (value) => setFilter((current) => ({ ...current, [field]: value }));
+
+  const params = () =>
+    cleanParams({
+      from: startOfDayIso(filter.from),
+      to: endOfDayIso(filter.to),
+      locationId: filter.locationId,
+      categoryId: filter.categoryId,
+    });
+
   const byLocation = filter.locationId !== "";
 
   const columns = [
@@ -86,6 +98,14 @@ export default function TurnoverReport({ locations, categories }) {
         <DateField label="Do" value={filter.to} onChange={set("to")} />
         <LocationSelect locations={locations} value={filter.locationId} onChange={set("locationId")} emptyLabel="Ceo lanac" />
         <CategorySelect categories={categories} value={filter.categoryId} onChange={set("categoryId")} />
+        <Box sx={{ flexGrow: 1 }} />
+        {can("reports.export") && (
+          <ExportMenu
+            fileName={`promet-${filter.from}-${filter.to}`}
+            previewTitle="Promet robe"
+            load={(format) => exportsApi.turnover(format, params())}
+          />
+        )}
       </FilterBar>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}

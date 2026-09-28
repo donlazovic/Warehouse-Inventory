@@ -21,9 +21,10 @@ import {
 } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { categoriesApi, locationsApi, productsApi, stockApi } from "../api/endpoints";
+import { categoriesApi, exportParams, exportsApi, locationsApi, productsApi, stockApi } from "../api/endpoints";
 import { useAuth } from "../auth/AuthContext";
 import DataTable from "../components/common/DataTable";
+import ExportMenu from "../components/common/ExportMenu";
 import PageHeader from "../components/common/PageHeader";
 import { useToast } from "../components/common/Toast";
 import AdjustStockDialog from "../components/stock/AdjustStockDialog";
@@ -228,6 +229,13 @@ export default function StockPage() {
             <Button startIcon={<FactCheckOutlinedIcon />} onClick={() => setReconcileOpen(true)}>
               Provera uskladjenosti
             </Button>
+            {can("stock.export") && (
+              <ExportMenu
+                fileName={`zalihe-${new Date().toISOString().slice(0, 10)}`}
+                previewTitle="Stanje zaliha"
+                load={(format) => exportsApi.stock(format, exportParams(query.filter))}
+              />
+            )}
             {can("stock.update") && (
               <Button
                 variant="outlined"

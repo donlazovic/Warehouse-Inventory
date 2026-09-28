@@ -21,6 +21,12 @@ public abstract class PagedRequest
     }
 
     public string? Search { get; set; }
+
+    public void ExpandForExport(int maxRows)
+    {
+        _page = 1;
+        _pageSize = maxRows;
+    }
     public string? SortBy { get; set; }
     public bool SortDesc { get; set; }
 }

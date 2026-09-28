@@ -1,7 +1,9 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using QuestPDF.Infrastructure;
 using Warehouse.BusinessLayer.Services.Auth;
 using Warehouse.BusinessLayer.Services.Catalog;
+using Warehouse.BusinessLayer.Services.Export;
 using Warehouse.BusinessLayer.Services.Identity;
 using Warehouse.BusinessLayer.Services.Inventory;
 using Warehouse.BusinessLayer.Services.Orders;
@@ -15,7 +17,10 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddBusinessLayer(this IServiceCollection services, IConfiguration configuration)
     {
+        QuestPDF.Settings.License = LicenseType.Community;
+
         services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
+        services.Configure<CompanySettings>(configuration.GetSection(CompanySettings.SectionName));
 
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IAuthService, AuthService>();
@@ -34,6 +39,7 @@ public static class DependencyInjection
         services.AddScoped<IOrderService, OrderService>();
 
         services.AddScoped<IReportService, ReportService>();
+        services.AddScoped<IExportService, ExportService>();
 
         return services;
     }

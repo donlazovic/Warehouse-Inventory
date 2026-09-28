@@ -15,6 +15,8 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
+  exportParams,
+  exportsApi,
   locationsApi,
   ordersApi,
   productsApi,
@@ -23,6 +25,7 @@ import {
 } from "../api/endpoints";
 import { useAuth } from "../auth/AuthContext";
 import DataTable from "../components/common/DataTable";
+import ExportMenu from "../components/common/ExportMenu";
 import PageHeader from "../components/common/PageHeader";
 import { useToast } from "../components/common/Toast";
 import OrderFormDialog from "../components/forms/OrderFormDialog";
@@ -266,6 +269,16 @@ export default function OrdersPage() {
                 <ViewListIcon fontSize="small" sx={{ mr: 0.5 }} /> Lista
               </ToggleButton>
             </ToggleButtonGroup>
+
+            {can("orders.export") && (
+              <ExportMenu
+                fileName={`nalozi-${new Date().toISOString().slice(0, 10)}`}
+                previewTitle="Nalozi"
+                load={(format) =>
+                  exportsApi.orders(format, exportParams(view === "kanban" ? kanbanFilter : query.filter))
+                }
+              />
+            )}
 
             {can("orders.create") && (
               <Button

@@ -1,8 +1,10 @@
 import ArrowRightAltIcon from "@mui/icons-material/ArrowRightAlt";
 import { Alert, Box, Chip, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
-import { locationsApi, stockApi } from "../api/endpoints";
+import { exportParams, exportsApi, locationsApi, stockApi } from "../api/endpoints";
+import { useAuth } from "../auth/AuthContext";
 import DataTable from "../components/common/DataTable";
+import ExportMenu from "../components/common/ExportMenu";
 import PageHeader from "../components/common/PageHeader";
 import usePagedQuery from "../hooks/usePagedQuery";
 import { monoFont } from "../theme";
@@ -25,6 +27,7 @@ const sign = (row, locationId) => {
 };
 
 export default function MovementsPage() {
+  const { can } = useAuth();
   const [locations, setLocations] = useState([]);
   const [range, setRange] = useState({ from: "", to: "" });
 
@@ -139,6 +142,15 @@ export default function MovementsPage() {
       <PageHeader
         title="Kretanje robe"
         description="Nepromenljiv dnevnik svake promene zaliha. Zapisi se ne mogu menjati ni brisati — ispravka se radi novom korekcijom."
+        actions={
+          can("stock.export") && (
+            <ExportMenu
+              fileName={`kretanje-robe-${new Date().toISOString().slice(0, 10)}`}
+              previewTitle="Kretanje robe"
+              load={(format) => exportsApi.movements(format, exportParams(query.filter))}
+            />
+          )
+        }
       />
 
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>

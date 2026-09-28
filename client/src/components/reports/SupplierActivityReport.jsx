@@ -1,7 +1,9 @@
 import { Alert, Box, MenuItem, Paper, TextField, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip as ChartTooltip, XAxis, YAxis } from "recharts";
-import { reportsApi, suppliersApi } from "../../api/endpoints";
+import { exportsApi, reportsApi, suppliersApi } from "../../api/endpoints";
+import { useAuth } from "../../auth/AuthContext";
+import ExportMenu from "../common/ExportMenu";
 import { monoFont } from "../../theme";
 import {
   chartColors,
@@ -20,6 +22,7 @@ import Quantity from "./Quantity";
 import { DateField, FilterBar } from "./ReportFilters";
 
 export default function SupplierActivityReport() {
+  const { can } = useAuth();
   const [suppliers, setSuppliers] = useState([]);
   const [filter, setFilter] = useState({ supplierId: "", from: monthsAgoInput(6), to: toDateInput(new Date()) });
   const [report, setReport] = useState(null);
@@ -107,6 +110,20 @@ export default function SupplierActivityReport() {
         </TextField>
         <DateField label="Od" value={filter.from} onChange={set("from")} />
         <DateField label="Do" value={filter.to} onChange={set("to")} />
+        <Box sx={{ flexGrow: 1 }} />
+        {can("reports.export") && (
+          <ExportMenu
+            disabled={filter.supplierId === ""}
+            fileName={`dobavljac-${filter.supplierId}-${filter.from}-${filter.to}`}
+            previewTitle="Aktivnost dobavljaca"
+            load={(format) =>
+              exportsApi.supplierActivity(filter.supplierId, format, {
+                from: startOfDayIso(filter.from),
+                to: endOfDayIso(filter.to),
+              })
+            }
+          />
+        )}
       </FilterBar>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
