@@ -1,3 +1,4 @@
+import AssessmentIcon from "@mui/icons-material/Assessment";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import CategoryIcon from "@mui/icons-material/Category";
 import GroupIcon from "@mui/icons-material/Group";
@@ -14,6 +15,7 @@ export const navigation = [
     items: [
       { label: "Pocetna", to: "/", icon: HomeIcon },
       { label: "Nalozi", to: "/nalozi", icon: AssignmentIcon, permission: "orders.view" },
+      { label: "Izvestaji", to: "/izvestaji", icon: AssessmentIcon, permission: "reports.view" },
     ],
   },
   {

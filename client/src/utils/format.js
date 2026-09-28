@@ -78,3 +78,35 @@ export const startOfDayIso = (dateString) =>
 
 export const endOfDayIso = (dateString) =>
   dateString ? new Date(`${dateString}T23:59:59.999`).toISOString() : null;
+
+const compactFormat = new Intl.NumberFormat("sr-RS", { notation: "compact", maximumFractionDigits: 1 });
+
+export const formatCompact = (value) => compactFormat.format(value ?? 0);
+
+export const monthLabels = ["jan", "feb", "mar", "apr", "maj", "jun", "jul", "avg", "sep", "okt", "nov", "dec"];
+
+const pad = (value) => String(value).padStart(2, "0");
+
+export const toDateInput = (date) => {
+  const d = new Date(date);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+
+export const daysAgoInput = (days) => {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return toDateInput(d);
+};
+
+export const monthsAgoInput = (months) => {
+  const d = new Date();
+  d.setMonth(d.getMonth() - months);
+  return toDateInput(d);
+};
+
+export const chartColors = {
+  received: "#1F5F4B",
+  transferred: "#1D5A87",
+  issued: "#B4541A",
+  palette: ["#1F5F4B", "#1D5A87", "#B4541A", "#7A8B3A", "#9B2C2C", "#2F7A61", "#B58A3C", "#6B7280"],
+};

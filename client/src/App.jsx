@@ -14,6 +14,7 @@ import OrdersPage from "./pages/OrdersPage";
 import PartnersPage from "./pages/PartnersPage";
 import ProductsPage from "./pages/ProductsPage";
 import RegisterPage from "./pages/RegisterPage";
+import ReportsPage from "./pages/ReportsPage";
 import StockPage from "./pages/StockPage";
 import UsersPage from "./pages/UsersPage";
 import theme from "./theme";
@@ -42,6 +43,7 @@ export default function App() {
               >
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/nalozi" element={guarded("orders.view", <OrdersPage />)} />
+                <Route path="/izvestaji" element={guarded("reports.view", <ReportsPage />)} />
                 <Route path="/zalihe" element={guarded("stock.view", <StockPage />)} />
                 <Route path="/skladista" element={guarded("stock.view", <LocationsPage />)} />
                 <Route path="/kretanja" element={guarded("stock.view", <MovementsPage />)} />

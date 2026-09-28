@@ -67,3 +67,11 @@ export const rolesApi = {
   tree: () => unwrap(api.get("/api/roles/permission-tree")),
   update: (id, payload) => unwrap(api.put(`/api/roles/${id}`, payload)),
 };
+
+export const reportsApi = {
+  dashboard: () => unwrap(api.get("/api/reports/dashboard")),
+  turnover: (params) => unwrap(api.get("/api/reports/turnover", { params })),
+  snapshot: (params) => unwrap(api.get("/api/reports/snapshot", { params })),
+  supplierActivity: (supplierId, params) =>
+    unwrap(api.get(`/api/reports/supplier-activity/${supplierId}`, { params })),
+};
