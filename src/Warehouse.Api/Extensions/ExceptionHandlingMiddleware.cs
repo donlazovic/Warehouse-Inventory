@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using Warehouse.BusinessLayer.Common;
 
@@ -28,6 +29,18 @@ public class ExceptionHandlingMiddleware
         {
             await WriteAsync(context, 401, ex.Message);
         }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            _logger.LogWarning(ex, "Konflikt istovremene izmene.");
+            await WriteAsync(context, 409,
+                "Podatak je upravo izmenio drugi korisnik. Osvezite prikaz i pokusajte ponovo.");
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogWarning(ex, "Upis odbijen zbog ogranicenja u bazi.");
+            await WriteAsync(context, 409,
+                "Operacija nije dozvoljena jer bi narusila integritet podataka.");
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Neocekivana greska prilikom obrade zahteva.");
@@ -37,6 +50,9 @@ public class ExceptionHandlingMiddleware
 
     private static async Task WriteAsync(HttpContext context, int statusCode, string message)
     {
+        if (context.Response.HasStarted)
+            return;
+
         context.Response.StatusCode = statusCode;
         context.Response.ContentType = "application/json";
 

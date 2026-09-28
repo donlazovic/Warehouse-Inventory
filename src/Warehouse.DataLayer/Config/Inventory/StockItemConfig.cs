@@ -8,12 +8,15 @@ internal class StockItemConfig : IEntityTypeConfiguration<StockItem>
 {
     public void Configure(EntityTypeBuilder<StockItem> builder)
     {
-        builder.ToTable("StockItem", "wh");
+        builder.ToTable("StockItem", "wh", table =>
+            table.HasCheckConstraint("CK_StockItem_Quantity_NonNegative", "[Quantity] >= 0"));
+
         builder.HasKey(x => x.Id);
 
         builder.Property(x => x.Quantity).HasPrecision(18, 3);
         builder.Property(x => x.MinStockOverride).HasPrecision(18, 3);
         builder.Property(x => x.MaxStockOverride).HasPrecision(18, 3);
+        builder.Property(x => x.RowVersion).IsRowVersion();
 
         builder.Ignore(x => x.EffectiveMinStock);
         builder.Ignore(x => x.EffectiveMaxStock);

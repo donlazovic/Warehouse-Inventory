@@ -20,7 +20,7 @@ export default function StatusChangeDialog({ request, submitting, error, onConfi
     <FormDialog
       open
       title={`Promena statusa — ${order.orderNumber}`}
-      submitLabel={isCancel ? "Storniraj nalog" : orderStatusLabels[status]}
+      submitLabel={isCancel ? "Otkazi nalog" : orderStatusLabels[status]}
       error={error}
       submitting={submitting}
       onSubmit={(event) => {
@@ -43,7 +43,7 @@ export default function StatusChangeDialog({ request, submitting, error, onConfi
 
       {isCancel && (
         <Typography variant="body2" sx={{ color: "error.main" }}>
-          Storniran nalog se ne moze vratiti u tok.
+          Otkazan nalog se ne moze vratiti u tok. Zalihe se ne menjaju jer roba jos nije pomerena.
         </Typography>
       )}
 

@@ -213,6 +213,16 @@ public class OrderService : IOrderService
                 $"Prelazak iz statusa '{OrderStatusRules.Title(order.Status)}' u " +
                 $"'{OrderStatusRules.Title(request.Status)}' nije dozvoljen.");
 
+        if (request.Status == OrderStatus.InProgress)
+        {
+            await ValidatePartiesAsync(
+                order.OrderType, order.SupplierId, order.StoreId,
+                order.SourceLocationId, order.DestinationLocationId, ct);
+
+            if (order.OrderType == OrderType.Outbound)
+                await EnsureStockAvailableAsync(order, ct);
+        }
+
         await using var transaction = await _uow.BeginTransactionAsync(ct);
 
         var previousStatus = order.Status;
@@ -254,9 +264,7 @@ public class OrderService : IOrderService
 
         var movementType = order.OrderType == OrderType.Inbound
             ? MovementType.Inbound
-            : order.SourceLocationId.HasValue && order.DestinationLocationId.HasValue
-                ? MovementType.Transfer
-                : MovementType.Outbound;
+            : MovementType.Transfer;
 
         foreach (var item in order.Items)
         {
@@ -269,12 +277,44 @@ public class OrderService : IOrderService
                 currentUserId,
                 order.Id,
                 $"Realizacija naloga {order.OrderNumber}",
-                ct);
+                ct: ct);
         }
+    }
+
+    private async Task EnsureStockAvailableAsync(Order order, CancellationToken ct)
+    {
+        var productIds = order.Items.Select(x => x.ProductId).ToList();
+
+        var available = await _uow.Repository<StockItem>()
+            .Query()
+            .Where(x => x.StorageLocationId == order.SourceLocationId && productIds.Contains(x.ProductId))
+            .Select(x => new { x.ProductId, x.Quantity })
+            .ToListAsync(ct);
+
+        var shortIds = order.Items
+            .Where(item => (available.FirstOrDefault(a => a.ProductId == item.ProductId)?.Quantity ?? 0m) < item.Quantity)
+            .Select(item => item.ProductId)
+            .ToList();
+
+        if (shortIds.Count == 0)
+            return;
+
+        var names = await _uow.Repository<Product>()
+            .Query()
+            .Where(x => shortIds.Contains(x.Id))
+            .Select(x => x.Name)
+            .ToListAsync(ct);
+
+        throw new AppException(
+            $"Na izvornoj lokaciji nema dovoljno robe za: {string.Join(", ", names)}. " +
+            "Realizacija ne moze da pocne dok se zalihe ne dopune.");
     }
 
     private async Task<List<OrderItem>> BuildItemsAsync(List<SaveOrderItemRequest> requested, CancellationToken ct)
     {
+        if (requested.GroupBy(x => x.ProductId).Any(g => g.Count() > 1))
+            throw new AppException("Isti proizvod se ne moze pojaviti u vise stavki. Saberite kolicine u jednoj stavci.");
+
         var productIds = requested.Select(x => x.ProductId).Distinct().ToList();
 
         var products = await _uow.Repository<Product>()
@@ -319,6 +359,8 @@ public class OrderService : IOrderService
         OrderType orderType, int? supplierId, int? storeId,
         int? sourceLocationId, int? destinationLocationId, CancellationToken ct)
     {
+        var locations = _uow.Repository<StorageLocation>().Query();
+
         if (orderType == OrderType.Inbound)
         {
             if (supplierId is null)
@@ -327,34 +369,65 @@ public class OrderService : IOrderService
             if (destinationLocationId is null)
                 throw new AppException("Ulazni nalog mora imati odredisnu lokaciju.");
 
+            if (sourceLocationId is not null)
+                throw new AppException("Ulazni nalog nema izvornu lokaciju jer roba dolazi od dobavljaca.");
+
+            if (storeId is not null)
+                throw new AppException("Ulazni nalog se ne vezuje za prodajni objekat.");
+
             if (!await _uow.Repository<Supplier>().ExistsAsync(x => x.Id == supplierId && x.IsActive, ct))
                 throw new AppException("Dobavljac ne postoji ili je deaktiviran.");
+
+            var destination = await locations
+                .Where(x => x.Id == destinationLocationId)
+                .Select(x => new { x.LocationType, x.IsActive })
+                .FirstOrDefaultAsync(ct);
+
+            if (destination is null || !destination.IsActive)
+                throw new AppException("Odredisna lokacija ne postoji ili je deaktivirana.");
+
+            if (destination.LocationType != LocationType.CentralWarehouse)
+                throw new AppException("Ulazni nalog prima robu samo u centralni magacin.");
+
+            return;
         }
-        else
-        {
-            if (sourceLocationId is null)
-                throw new AppException("Izlazni nalog mora imati izvornu lokaciju.");
 
-            if (storeId is null)
-                throw new AppException("Izlazni nalog mora imati prodajni objekat.");
+        if (storeId is null)
+            throw new AppException("Izlazni nalog mora imati prodajni objekat.");
 
-            if (!await _uow.Repository<Store>().ExistsAsync(x => x.Id == storeId && x.IsActive, ct))
-                throw new AppException("Prodajni objekat ne postoji ili je deaktiviran.");
+        if (sourceLocationId is null)
+            throw new AppException("Izlazni nalog mora imati izvornu lokaciju.");
 
-            if (destinationLocationId is null)
-                throw new AppException("Izlazni nalog mora imati odredisnu lokaciju objekta.");
-        }
+        if (destinationLocationId is null)
+            throw new AppException("Izlazni nalog mora imati odredisnu lokaciju objekta.");
 
-        if (sourceLocationId.HasValue && sourceLocationId == destinationLocationId)
-            throw new AppException("Izvorna i odredisna lokacija ne mogu biti iste.");
+        if (supplierId is not null)
+            throw new AppException("Izlazni nalog se ne vezuje za dobavljaca.");
 
-        var locationRepo = _uow.Repository<StorageLocation>();
+        if (!await _uow.Repository<Store>().ExistsAsync(x => x.Id == storeId && x.IsActive, ct))
+            throw new AppException("Prodajni objekat ne postoji ili je deaktiviran.");
 
-        if (sourceLocationId.HasValue && !await locationRepo.ExistsAsync(x => x.Id == sourceLocationId && x.IsActive, ct))
+        var source = await locations
+            .Where(x => x.Id == sourceLocationId)
+            .Select(x => new { x.LocationType, x.IsActive })
+            .FirstOrDefaultAsync(ct);
+
+        if (source is null || !source.IsActive)
             throw new AppException("Izvorna lokacija ne postoji ili je deaktivirana.");
 
-        if (destinationLocationId.HasValue && !await locationRepo.ExistsAsync(x => x.Id == destinationLocationId && x.IsActive, ct))
+        if (source.LocationType != LocationType.CentralWarehouse)
+            throw new AppException("Izlazni nalog salje robu samo iz centralnog magacina.");
+
+        var target = await locations
+            .Where(x => x.Id == destinationLocationId)
+            .Select(x => new { x.LocationType, x.StoreId, x.IsActive })
+            .FirstOrDefaultAsync(ct);
+
+        if (target is null || !target.IsActive)
             throw new AppException("Odredisna lokacija ne postoji ili je deaktivirana.");
+
+        if (target.LocationType != LocationType.Store || target.StoreId != storeId)
+            throw new AppException("Odredisna lokacija mora pripadati izabranom prodajnom objektu.");
     }
 
     private async Task<string> GenerateOrderNumberAsync(OrderType orderType, CancellationToken ct)

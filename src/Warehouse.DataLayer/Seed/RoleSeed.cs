@@ -85,7 +85,10 @@ public static class RoleSeed
             new RolePermission { RoleId = 4, PermissionId = 16, GrantedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
             new RolePermission { RoleId = 4, PermissionId = 24, GrantedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
             new RolePermission { RoleId = 4, PermissionId = 29, GrantedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new RolePermission { RoleId = 4, PermissionId = 34, GrantedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
+            new RolePermission { RoleId = 4, PermissionId = 34, GrantedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new RolePermission { RoleId = 1, PermissionId = 41, GrantedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new RolePermission { RoleId = 2, PermissionId = 41, GrantedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new RolePermission { RoleId = 3, PermissionId = 41, GrantedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
         );
     }
 }

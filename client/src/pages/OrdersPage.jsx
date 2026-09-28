@@ -13,6 +13,7 @@ import {
   ToggleButtonGroup,
 } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   locationsApi,
   ordersApi,
@@ -46,6 +47,8 @@ const permissionForStatus = (status) => {
 export default function OrdersPage() {
   const { can } = useAuth();
   const toast = useToast();
+  const routerLocation = useLocation();
+  const navigate = useNavigate();
 
   const [view, setView] = useState("kanban");
   const [kanbanColumns, setKanbanColumns] = useState([]);
@@ -56,6 +59,7 @@ export default function OrdersPage() {
   const [detail, setDetail] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [initial, setInitial] = useState(null);
   const [statusRequest, setStatusRequest] = useState(null);
   const [statusError, setStatusError] = useState(null);
   const [statusSubmitting, setStatusSubmitting] = useState(false);
@@ -96,6 +100,22 @@ export default function OrdersPage() {
       )
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    const replenish = routerLocation.state?.replenish;
+    if (!replenish || lookups.locations.length === 0) return;
+
+    setEditing(null);
+    setInitial({
+      orderType: 2,
+      storeId: replenish.storeId,
+      destinationLocationId: replenish.destinationLocationId,
+      note: `Dopuna zaliha: ${replenish.productName}`,
+      lines: [{ productId: replenish.productId, quantity: replenish.quantity }],
+    });
+    setFormOpen(true);
+    navigate(routerLocation.pathname, { replace: true, state: null });
+  }, [routerLocation.state, routerLocation.pathname, lookups.locations.length, navigate]);
 
   const refreshAll = () => {
     if (view === "kanban") loadKanban();
@@ -252,6 +272,7 @@ export default function OrdersPage() {
                 variant="contained"
                 onClick={() => {
                   setEditing(null);
+                  setInitial(null);
                   setFormOpen(true);
                 }}
               >
@@ -308,6 +329,7 @@ export default function OrdersPage() {
       <OrderFormDialog
         open={formOpen}
         order={editing}
+        initial={initial}
         products={lookups.products}
         suppliers={lookups.suppliers}
         stores={lookups.stores}
@@ -315,11 +337,13 @@ export default function OrdersPage() {
         onClose={() => {
           setFormOpen(false);
           setEditing(null);
+          setInitial(null);
         }}
         onSaved={(message) => {
           toast.success(message);
           setFormOpen(false);
           setEditing(null);
+          setInitial(null);
           setDetail(null);
           refreshAll();
         }}

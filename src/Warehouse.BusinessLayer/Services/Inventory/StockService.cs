@@ -30,6 +30,9 @@ public class StockService : IStockService
         if (filter.StorageLocationId.HasValue)
             query = query.Where(x => x.StorageLocationId == filter.StorageLocationId);
 
+        if (filter.StoreId.HasValue)
+            query = query.Where(x => x.StorageLocation.StoreId == filter.StoreId);
+
         if (filter.CategoryId.HasValue)
             query = query.Where(x => x.Product.CategoryId == filter.CategoryId);
 
@@ -39,10 +42,15 @@ public class StockService : IStockService
         if (filter.OnlyBelowMinimum)
             query = query.Where(x => x.Quantity < (x.MinStockOverride ?? x.Product.MinStock));
 
+        if (filter.OnlyInStock)
+            query = query.Where(x => x.Quantity > 0);
+
         query = filter.SortBy?.ToLowerInvariant() switch
         {
             "quantity" => query.ApplySort(x => x.Quantity, filter.SortDesc),
             "location" => query.ApplySort(x => x.StorageLocation.Code, filter.SortDesc),
+            "category" => query.ApplySort(x => x.Product.Category.Name, filter.SortDesc),
+            "updatedat" => query.ApplySort(x => x.UpdatedAt, filter.SortDesc),
             _ => query.ApplySort(x => x.Product.Name, filter.SortDesc)
         };
 
@@ -56,7 +64,9 @@ public class StockService : IStockService
         if (!string.IsNullOrWhiteSpace(filter.Search))
         {
             var term = filter.Search.Trim();
-            query = query.Where(x => x.Product.Name.Contains(term) || x.Product.Sku.Contains(term));
+            query = query.Where(x => x.Product.Name.Contains(term)
+                                  || x.Product.Sku.Contains(term)
+                                  || (x.Order != null && x.Order.OrderNumber.Contains(term)));
         }
 
         if (filter.ProductId.HasValue)
@@ -67,6 +77,9 @@ public class StockService : IStockService
 
         if (filter.MovementType.HasValue)
             query = query.Where(x => x.MovementType == filter.MovementType);
+
+        if (filter.IssueReason.HasValue)
+            query = query.Where(x => x.IssueReason == filter.IssueReason);
 
         if (filter.OrderId.HasValue)
             query = query.Where(x => x.OrderId == filter.OrderId);
@@ -84,15 +97,18 @@ public class StockService : IStockService
         {
             "product" => query.ApplySort(x => x.Product.Name, filter.SortDesc),
             "quantity" => query.ApplySort(x => x.Quantity, filter.SortDesc),
-            _ => query.OrderByDescending(x => x.CreatedAt)
+            "createdat" => query.ApplySort(x => x.CreatedAt, filter.SortDesc),
+            _ => query.OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id)
         };
 
         var projected = query.Select(x => new StockMovementDto(
             x.Id,
             x.MovementType,
+            x.IssueReason,
             x.ProductId,
             x.Product.Sku,
             x.Product.Name,
+            x.Product.UnitOfMeasure,
             x.Quantity,
             x.FromLocationId,
             x.FromLocation != null ? x.FromLocation.Name : null,
@@ -112,11 +128,14 @@ public class StockService : IStockService
         if (request.NewQuantity < 0)
             throw new AppException("Kolicina ne moze biti negativna.");
 
+        if (string.IsNullOrWhiteSpace(request.Note))
+            throw new AppException("Razlog korekcije je obavezan.");
+
         if (!await _uow.Repository<Product>().ExistsAsync(x => x.Id == request.ProductId, ct))
             throw new AppException("Proizvod nije pronadjen.", 404);
 
-        if (!await _uow.Repository<StorageLocation>().ExistsAsync(x => x.Id == request.StorageLocationId, ct))
-            throw new AppException("Lokacija nije pronadjena.", 404);
+        if (!await _uow.Repository<StorageLocation>().ExistsAsync(x => x.Id == request.StorageLocationId && x.IsActive, ct))
+            throw new AppException("Lokacija ne postoji ili je deaktivirana.", 404);
 
         await using var transaction = await _uow.BeginTransactionAsync(ct);
 
@@ -126,24 +145,71 @@ public class StockService : IStockService
         if (difference == 0)
             throw new AppException("Nova kolicina je ista kao trenutna.");
 
-        stockItem.Quantity = request.NewQuantity;
-        _uow.Repository<StockItem>().Update(stockItem);
+        var hasHistory = await _uow.Repository<StockMovement>().ExistsAsync(
+            x => x.ProductId == request.ProductId
+              && (x.FromLocationId == request.StorageLocationId || x.ToLocationId == request.StorageLocationId),
+            ct);
 
-        await _uow.Repository<StockMovement>().AddAsync(new StockMovement
-        {
-            ProductId = request.ProductId,
-            MovementType = MovementType.Adjustment,
-            Quantity = Math.Abs(difference),
-            FromLocationId = difference < 0 ? request.StorageLocationId : null,
-            ToLocationId = difference > 0 ? request.StorageLocationId : null,
-            UserId = currentUserId,
-            Note = request.Note ?? "Rucna korekcija zaliha"
-        }, ct);
+        var movementType = !hasHistory && difference > 0 ? MovementType.InitialStock : MovementType.Adjustment;
+
+        await ApplyMovementAsync(
+            request.ProductId,
+            Math.Abs(difference),
+            movementType,
+            fromLocationId: difference < 0 ? request.StorageLocationId : null,
+            toLocationId: difference > 0 ? request.StorageLocationId : null,
+            currentUserId,
+            orderId: null,
+            note: request.Note.Trim(),
+            ct: ct);
 
         await _uow.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
 
         return await GetStockItemDtoAsync(stockItem.Id, ct);
+    }
+
+    public async Task<int> IssueAsync(IssueStockRequest request, int currentUserId, CancellationToken ct = default)
+    {
+        if (!Enum.IsDefined(request.Reason))
+            throw new AppException("Razlog izlaza nije ispravan.");
+
+        if (request.Reason != IssueReason.Sale && string.IsNullOrWhiteSpace(request.Note))
+            throw new AppException("Za otpis, lom i internu potrosnju napomena je obavezna.");
+
+        if (request.Items is null || request.Items.Count == 0)
+            throw new AppException("Izlaz mora imati bar jednu stavku.");
+
+        if (request.Items.GroupBy(x => x.ProductId).Any(g => g.Count() > 1))
+            throw new AppException("Isti proizvod se ne moze pojaviti u vise stavki.");
+
+        if (request.Items.Any(x => x.Quantity <= 0))
+            throw new AppException("Kolicina svake stavke mora biti veca od nule.");
+
+        if (!await _uow.Repository<StorageLocation>().ExistsAsync(x => x.Id == request.StorageLocationId && x.IsActive, ct))
+            throw new AppException("Lokacija ne postoji ili je deaktivirana.");
+
+        await using var transaction = await _uow.BeginTransactionAsync(ct);
+
+        foreach (var line in request.Items)
+        {
+            await ApplyMovementAsync(
+                line.ProductId,
+                line.Quantity,
+                MovementType.Outbound,
+                fromLocationId: request.StorageLocationId,
+                toLocationId: null,
+                currentUserId,
+                orderId: null,
+                note: request.Note?.Trim(),
+                issueReason: request.Reason,
+                ct: ct);
+        }
+
+        await _uow.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+
+        return request.Items.Count;
     }
 
     public async Task<StockItemDto> SetLimitsAsync(int stockItemId, SetStockLimitsRequest request, CancellationToken ct = default)
@@ -157,7 +223,7 @@ public class StockService : IStockService
             throw new AppException("Granicne vrednosti ne mogu biti negativne.");
 
         if (request.MinStockOverride.HasValue && request.MaxStockOverride.HasValue
-            && request.MinStockOverride > request.MaxStockOverride)
+            && request.MaxStockOverride > 0 && request.MinStockOverride > request.MaxStockOverride)
             throw new AppException("Minimalna zaliha ne moze biti veca od maksimalne.");
 
         stockItem.MinStockOverride = request.MinStockOverride;
@@ -169,6 +235,52 @@ public class StockService : IStockService
         return await GetStockItemDtoAsync(stockItemId, ct);
     }
 
+    public async Task<StockReconciliationDto> GetReconciliationAsync(CancellationToken ct = default)
+    {
+        var movements = _uow.Repository<StockMovement>().Query();
+
+        var incoming = await movements
+            .Where(x => x.ToLocationId != null)
+            .GroupBy(x => new { x.ProductId, LocationId = x.ToLocationId })
+            .Select(g => new { g.Key.ProductId, g.Key.LocationId, Quantity = g.Sum(x => x.Quantity) })
+            .ToListAsync(ct);
+
+        var outgoing = await movements
+            .Where(x => x.FromLocationId != null)
+            .GroupBy(x => new { x.ProductId, LocationId = x.FromLocationId })
+            .Select(g => new { g.Key.ProductId, g.Key.LocationId, Quantity = g.Sum(x => x.Quantity) })
+            .ToListAsync(ct);
+
+        var items = await _uow.Repository<StockItem>()
+            .Query()
+            .Select(x => new
+            {
+                x.ProductId,
+                x.StorageLocationId,
+                x.Quantity,
+                ProductName = x.Product.Name,
+                LocationName = x.StorageLocation.Name
+            })
+            .ToListAsync(ct);
+
+        var incomingMap = incoming.ToDictionary(x => (x.ProductId, x.LocationId!.Value), x => x.Quantity);
+        var outgoingMap = outgoing.ToDictionary(x => (x.ProductId, x.LocationId!.Value), x => x.Quantity);
+
+        var mismatches = items
+            .Select(item =>
+            {
+                var key = (item.ProductId, item.StorageLocationId);
+                var expected = incomingMap.GetValueOrDefault(key) - outgoingMap.GetValueOrDefault(key);
+                return new StockMismatchDto(
+                    item.ProductId, item.ProductName, item.StorageLocationId, item.LocationName,
+                    item.Quantity, expected);
+            })
+            .Where(x => x.RecordedQuantity != x.ExpectedQuantity)
+            .ToList();
+
+        return new StockReconciliationDto(DateTime.UtcNow, items.Count, mismatches.Count == 0, mismatches);
+    }
+
     public async Task ApplyMovementAsync(
         int productId,
         decimal quantity,
@@ -178,6 +290,7 @@ public class StockService : IStockService
         int userId,
         int? orderId,
         string? note,
+        IssueReason? issueReason = null,
         CancellationToken ct = default)
     {
         if (quantity <= 0)
@@ -192,10 +305,14 @@ public class StockService : IStockService
 
             if (source.Quantity < quantity)
             {
-                var product = await _uow.Repository<Product>().GetByIdAsync(productId, ct);
+                var name = await _uow.Repository<Product>()
+                    .Query()
+                    .Where(x => x.Id == productId)
+                    .Select(x => x.Name)
+                    .FirstOrDefaultAsync(ct);
+
                 throw new AppException(
-                    $"Nedovoljna kolicina na izvornoj lokaciji za proizvod {product?.Name}. " +
-                    $"Dostupno: {source.Quantity}, potrebno: {quantity}.");
+                    $"Nedovoljna kolicina za proizvod \"{name}\". Dostupno: {source.Quantity:0.###}, potrebno: {quantity:0.###}.");
             }
 
             source.Quantity -= quantity;
@@ -213,6 +330,7 @@ public class StockService : IStockService
         {
             ProductId = productId,
             MovementType = movementType,
+            IssueReason = issueReason,
             Quantity = quantity,
             FromLocationId = fromLocationId,
             ToLocationId = toLocationId,
@@ -260,10 +378,13 @@ public class StockService : IStockService
             x.StorageLocation.Code,
             x.StorageLocation.Name,
             x.StorageLocation.LocationType,
+            x.StorageLocation.StoreId,
             x.StorageLocation.Store != null ? x.StorageLocation.Store.Name : null,
             x.Quantity,
             x.MinStockOverride ?? x.Product.MinStock,
             x.MaxStockOverride ?? x.Product.MaxStock,
+            x.MinStockOverride,
+            x.MaxStockOverride,
             x.Quantity < (x.MinStockOverride ?? x.Product.MinStock),
             x.UpdatedAt));
 }

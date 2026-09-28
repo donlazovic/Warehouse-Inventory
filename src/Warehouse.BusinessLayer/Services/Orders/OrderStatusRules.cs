@@ -34,7 +34,7 @@ public static class OrderStatusRules
         OrderStatus.Approved => "Odobren",
         OrderStatus.InProgress => "U realizaciji",
         OrderStatus.Completed => "Realizovan",
-        OrderStatus.Cancelled => "Storniran",
+        OrderStatus.Cancelled => "Otkazan",
         _ => status.ToString()
     };
 }

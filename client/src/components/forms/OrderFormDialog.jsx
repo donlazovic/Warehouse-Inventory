@@ -26,6 +26,7 @@ const emptyLine = { productId: "", quantity: "", unitPrice: "" };
 export default function OrderFormDialog({
   open,
   order,
+  initial,
   products,
   suppliers,
   stores,
@@ -73,6 +74,19 @@ export default function OrderFormDialog({
           unitPrice: item.unitPrice,
         }))
       );
+    } else if (initial) {
+      const warehouses = locations.filter((location) => location.locationType === 1);
+      setOrderType(initial.orderType ?? 2);
+      setSupplierId("");
+      setStoreId(initial.storeId ?? "");
+      setSourceLocationId(initial.sourceLocationId ?? (warehouses.length === 1 ? warehouses[0].id : ""));
+      setDestinationLocationId(initial.destinationLocationId ?? "");
+      setNote(initial.note ?? "");
+      setLines(
+        initial.lines?.length
+          ? initial.lines.map((line) => ({ productId: line.productId, quantity: line.quantity, unitPrice: "" }))
+          : [{ ...emptyLine }]
+      );
     } else {
       setOrderType(1);
       setSupplierId("");
@@ -82,7 +96,7 @@ export default function OrderFormDialog({
       setNote("");
       setLines([{ ...emptyLine }]);
     }
-  }, [open, order]);
+  }, [open, order, initial]);
 
   const setLine = (index, field, value) =>
     setLines((current) =>
@@ -90,6 +104,11 @@ export default function OrderFormDialog({
     );
 
   const handleProductChange = (index, productId) => {
+    if (lines.some((line, position) => position !== index && Number(line.productId) === Number(productId))) {
+      setError("Taj proizvod je vec dodat. Povecajte kolicinu u postojecoj stavci.");
+      return;
+    }
+    setError(null);
     const product = products.find((item) => item.id === Number(productId));
     setLines((current) =>
       current.map((line, position) =>

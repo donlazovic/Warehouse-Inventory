@@ -27,10 +27,23 @@ public class StockController : ControllerBase
         [FromQuery] StockMovementFilterRequest filter, CancellationToken ct)
         => Ok(await _service.GetMovementsAsync(filter, ct));
 
+    [HttpGet("reconciliation")]
+    [HasPermission("stock.view")]
+    public async Task<ActionResult<StockReconciliationDto>> GetReconciliation(CancellationToken ct)
+        => Ok(await _service.GetReconciliationAsync(ct));
+
     [HttpPost("adjust")]
     [HasPermission("stock.update")]
     public async Task<ActionResult<StockItemDto>> Adjust(AdjustStockRequest request, CancellationToken ct)
         => Ok(await _service.AdjustAsync(request, User.GetUserId(), ct));
+
+    [HttpPost("issue")]
+    [HasPermission("stock.issue")]
+    public async Task<ActionResult<object>> Issue(IssueStockRequest request, CancellationToken ct)
+    {
+        var lines = await _service.IssueAsync(request, User.GetUserId(), ct);
+        return Ok(new { issuedLines = lines });
+    }
 
     [HttpPut("{stockItemId:int}/limits")]
     [HasPermission("stock.update")]

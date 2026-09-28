@@ -7,12 +7,14 @@ import AppLayout from "./components/layout/AppLayout";
 import CategoriesPage from "./pages/CategoriesPage";
 import DashboardPage from "./pages/DashboardPage";
 import LocationsPage from "./pages/LocationsPage";
+import MovementsPage from "./pages/MovementsPage";
 import LoginPage from "./pages/LoginPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import OrdersPage from "./pages/OrdersPage";
 import PartnersPage from "./pages/PartnersPage";
 import ProductsPage from "./pages/ProductsPage";
 import RegisterPage from "./pages/RegisterPage";
+import StockPage from "./pages/StockPage";
 import UsersPage from "./pages/UsersPage";
 import theme from "./theme";
 
@@ -40,7 +42,9 @@ export default function App() {
               >
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/nalozi" element={guarded("orders.view", <OrdersPage />)} />
+                <Route path="/zalihe" element={guarded("stock.view", <StockPage />)} />
                 <Route path="/skladista" element={guarded("stock.view", <LocationsPage />)} />
+                <Route path="/kretanja" element={guarded("stock.view", <MovementsPage />)} />
                 <Route path="/proizvodi" element={guarded("products.view", <ProductsPage />)} />
                 <Route path="/kategorije" element={guarded("categories.view", <CategoriesPage />)} />
                 <Route path="/dobavljaci" element={guarded("suppliers.view", <PartnersPage kind="supplier" />)} />

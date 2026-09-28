@@ -10,6 +10,8 @@ public class StockItem : BaseEntity
     public decimal? MinStockOverride { get; set; }
     public decimal? MaxStockOverride { get; set; }
 
+    public byte[] RowVersion { get; set; } = Array.Empty<byte>();
+
     public int ProductId { get; set; }
     public Product Product { get; set; } = null!;
 

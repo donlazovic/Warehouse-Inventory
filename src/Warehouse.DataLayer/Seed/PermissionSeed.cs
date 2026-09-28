@@ -48,7 +48,8 @@ public static class PermissionSeed
             new Permission { Id = 37, Code = "users.view", Name = "Pregled", Module = "Users", Action = PermissionAction.View, ParentId = 36, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
             new Permission { Id = 38, Code = "users.create", Name = "Kreiranje", Module = "Users", Action = PermissionAction.Create, ParentId = 36, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
             new Permission { Id = 39, Code = "users.update", Name = "Izmena", Module = "Users", Action = PermissionAction.Update, ParentId = 36, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Permission { Id = 40, Code = "users.delete", Name = "Brisanje", Module = "Users", Action = PermissionAction.Delete, ParentId = 36, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
+            new Permission { Id = 40, Code = "users.delete", Name = "Brisanje", Module = "Users", Action = PermissionAction.Delete, ParentId = 36, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Permission { Id = 41, Code = "stock.issue", Name = "Izlaz robe", Module = "Stock", Action = PermissionAction.Execute, ParentId = 11, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
         );
     }
 }

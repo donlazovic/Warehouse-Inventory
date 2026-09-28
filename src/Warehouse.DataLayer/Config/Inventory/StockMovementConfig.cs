@@ -8,10 +8,18 @@ internal class StockMovementConfig : IEntityTypeConfiguration<StockMovement>
 {
     public void Configure(EntityTypeBuilder<StockMovement> builder)
     {
-        builder.ToTable("StockMovement", "wh");
+        builder.ToTable("StockMovement", "wh", table =>
+        {
+            table.HasCheckConstraint("CK_StockMovement_Quantity_Positive", "[Quantity] > 0");
+            table.HasCheckConstraint(
+                "CK_StockMovement_HasLocation",
+                "[FromLocationId] IS NOT NULL OR [ToLocationId] IS NOT NULL");
+        });
+
         builder.HasKey(x => x.Id);
 
         builder.Property(x => x.MovementType).HasConversion<int>();
+        builder.Property(x => x.IssueReason).HasConversion<int?>();
         builder.Property(x => x.Quantity).HasPrecision(18, 3);
         builder.Property(x => x.Note).HasMaxLength(500);
 

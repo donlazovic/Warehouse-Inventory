@@ -45,6 +45,8 @@ export const stockApi = {
   movements: (params) => unwrap(api.get("/api/stock/movements", { params })),
   adjust: (payload) => unwrap(api.post("/api/stock/adjust", payload)),
   setLimits: (id, payload) => unwrap(api.put(`/api/stock/${id}/limits`, payload)),
+  issue: (payload) => unwrap(api.post("/api/stock/issue", payload)),
+  reconciliation: () => unwrap(api.get("/api/stock/reconciliation")),
 };
 
 export const usersApi = {

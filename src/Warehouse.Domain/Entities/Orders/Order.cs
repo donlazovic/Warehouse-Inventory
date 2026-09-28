@@ -14,6 +14,8 @@ public class Order : BaseEntity
     public decimal TotalValue { get; set; }
     public string? Note { get; set; }
 
+    public byte[] RowVersion { get; set; } = Array.Empty<byte>();
+
     public DateTime? ApprovedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
 

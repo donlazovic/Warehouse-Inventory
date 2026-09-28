@@ -15,7 +15,7 @@ export const orderStatusLabels = {
   3: "Odobren",
   4: "U realizaciji",
   5: "Realizovan",
-  6: "Storniran",
+  6: "Otkazan",
 };
 
 export const orderTypeLabels = { 1: "Ulazni", 2: "Izlazni" };
@@ -26,6 +26,21 @@ export const movementTypeLabels = {
   3: "Izlaz",
   4: "Prenos",
   5: "Korekcija",
+};
+
+export const movementTypeColors = {
+  1: "#6B7280",
+  2: "#1F5F4B",
+  3: "#B4541A",
+  4: "#1D5A87",
+  5: "#7A5C2E",
+};
+
+export const issueReasonLabels = {
+  1: "Prodaja",
+  2: "Otpis",
+  3: "Lom",
+  4: "Interna potrosnja",
 };
 
 export const locationTypeLabels = { 1: "Centralni magacin", 2: "Prodajni objekat" };
@@ -57,3 +72,9 @@ export const formatDateTime = (value) =>
         minute: "2-digit",
       })
     : "—";
+
+export const startOfDayIso = (dateString) =>
+  dateString ? new Date(`${dateString}T00:00:00`).toISOString() : null;
+
+export const endOfDayIso = (dateString) =>
+  dateString ? new Date(`${dateString}T23:59:59.999`).toISOString() : null;

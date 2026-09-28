@@ -183,7 +183,7 @@ export default function KanbanBoard({ columns, canMove, canMoveTo = () => true, 
             </Typography>
             {dragged && canDropOn(CANCELLED) && (
               <Typography variant="body2" sx={{ color: "error.main", fontSize: "0.75rem" }}>
-                Pustite ovde da biste stornirali
+                Pustite ovde da biste otkazali
               </Typography>
             )}
             <IconButton size="small">
@@ -203,7 +203,7 @@ export default function KanbanBoard({ columns, canMove, canMoveTo = () => true, 
             >
               {cancelledColumn.orders.length === 0 ? (
                 <Typography variant="body2" sx={{ color: "text.disabled", fontSize: "0.78rem" }}>
-                  Nema storniranih naloga.
+                  Nema otkazanih naloga.
                 </Typography>
               ) : (
                 cancelledColumn.orders.map((order) => (

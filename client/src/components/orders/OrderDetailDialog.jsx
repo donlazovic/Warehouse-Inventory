@@ -176,7 +176,7 @@ export default function OrderDetailDialog({ detail, canMoveTo, onChangeStatus, o
                 color={status === 6 ? "error" : "primary"}
                 onClick={() => onChangeStatus(order, status)}
               >
-                {orderStatusLabels[status]}
+                {status === 6 ? "Otkazi nalog" : orderStatusLabels[status]}
               </Button>
             ))}
         </Stack>

@@ -9,6 +9,7 @@ namespace Warehouse.Domain.Entities.Inventory;
 public class StockMovement : BaseEntity
 {
     public MovementType MovementType { get; set; }
+    public IssueReason? IssueReason { get; set; }
     public decimal Quantity { get; set; }
     public string? Note { get; set; }
 
