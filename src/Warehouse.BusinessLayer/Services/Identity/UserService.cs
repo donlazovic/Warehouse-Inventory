@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Warehouse.BusinessLayer.Common;
 using Warehouse.BusinessLayer.DTOs.Identity;
+using Warehouse.BusinessLayer.Realtime;
 using Warehouse.DataLayer.Repositories;
 using Warehouse.Domain.Entities.Identity;
 
@@ -13,8 +14,13 @@ public class UserService : IUserService
     private const int MinPasswordLength = 8;
 
     private readonly IUnitOfWork _uow;
+    private readonly IEventCollector _events;
 
-    public UserService(IUnitOfWork uow) => _uow = uow;
+    public UserService(IUnitOfWork uow, IEventCollector events)
+    {
+        _uow = uow;
+        _events = events;
+    }
 
     public async Task<PagedResult<UserDto>> GetPagedAsync(UserFilterRequest filter, CancellationToken ct = default)
     {
@@ -70,7 +76,7 @@ public class UserService : IUserService
             .FirstOrDefaultAsync(x => x.Name == DefaultPendingRoleName, ct)
             ?? throw new AppException("Sistemska uloga za nove naloge ne postoji.", 500);
 
-        await _uow.Repository<User>().AddAsync(new User
+        var user = new User
         {
             FirstName = request.FirstName.Trim(),
             LastName = request.LastName.Trim(),
@@ -79,9 +85,12 @@ public class UserService : IUserService
             RoleId = pendingRole.Id,
             IsActive = true,
             ApprovedAt = null
-        }, ct);
+        };
 
+        await _uow.Repository<User>().AddAsync(user, ct);
         await _uow.SaveChangesAsync(ct);
+
+        _events.Add(new UserRegisteredEvent(user.Id));
     }
 
     public async Task<UserDto> CreateAsync(CreateUserRequest request, int currentUserId, CancellationToken ct = default)
@@ -179,6 +188,8 @@ public class UserService : IUserService
         repo.Update(user);
         await _uow.SaveChangesAsync(ct);
 
+        _events.Add(new PendingUsersChangedEvent());
+
         return await GetByIdAsync(id, ct);
     }
 
@@ -194,6 +205,8 @@ public class UserService : IUserService
 
         repo.Remove(user);
         await _uow.SaveChangesAsync(ct);
+
+        _events.Add(new PendingUsersChangedEvent());
     }
 
     public async Task ResetPasswordAsync(int id, ResetPasswordRequest request, int currentUserId, CancellationToken ct = default)

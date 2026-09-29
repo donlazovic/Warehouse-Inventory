@@ -18,7 +18,7 @@ const allowedTransitions = {
   6: [],
 };
 
-export default function KanbanBoard({ columns, canMove, canMoveTo = () => true, onMove, onOpen }) {
+export default function KanbanBoard({ columns, canMove, canMoveTo = () => true, highlighted = new Set(), onMove, onOpen }) {
   const [dragged, setDragged] = useState(null);
   const [hoveredStatus, setHoveredStatus] = useState(null);
   const [cancelledOpen, setCancelledOpen] = useState(false);
@@ -134,6 +134,7 @@ export default function KanbanBoard({ columns, canMove, canMoveTo = () => true, 
                     key={order.id}
                     order={order}
                     draggable={canMove}
+                    highlighted={highlighted.has(order.id)}
                     onDragStart={handleDragStart}
                     onDragEnd={handleDragEnd}
                     onClick={onOpen}
@@ -207,7 +208,7 @@ export default function KanbanBoard({ columns, canMove, canMoveTo = () => true, 
                 </Typography>
               ) : (
                 cancelledColumn.orders.map((order) => (
-                  <OrderCard key={order.id} order={order} onClick={onOpen} />
+                  <OrderCard key={order.id} order={order} highlighted={highlighted.has(order.id)} onClick={onOpen} />
                 ))
               )}
             </Box>

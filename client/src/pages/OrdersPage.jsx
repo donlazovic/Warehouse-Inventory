@@ -13,7 +13,7 @@ import {
   ToggleButtonGroup,
 } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   exportParams,
   exportsApi,
@@ -33,6 +33,7 @@ import KanbanBoard from "../components/orders/KanbanBoard";
 import OrderDetailDialog from "../components/orders/OrderDetailDialog";
 import StatusChangeDialog from "../components/orders/StatusChangeDialog";
 import usePagedQuery from "../hooks/usePagedQuery";
+import useRealtimeEvent from "../hooks/useRealtimeEvent";
 import { monoFont, statusColors } from "../theme";
 import {
   formatDate,
@@ -52,6 +53,7 @@ export default function OrdersPage() {
   const toast = useToast();
   const routerLocation = useLocation();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [view, setView] = useState("kanban");
   const [kanbanColumns, setKanbanColumns] = useState([]);
@@ -63,6 +65,7 @@ export default function OrdersPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [initial, setInitial] = useState(null);
+  const [highlighted, setHighlighted] = useState(new Set());
   const [statusRequest, setStatusRequest] = useState(null);
   const [statusError, setStatusError] = useState(null);
   const [statusSubmitting, setStatusSubmitting] = useState(false);
@@ -119,6 +122,40 @@ export default function OrdersPage() {
     setFormOpen(true);
     navigate(routerLocation.pathname, { replace: true, state: null });
   }, [routerLocation.state, routerLocation.pathname, lookups.locations.length, navigate]);
+
+  useEffect(() => {
+    const orderId = Number(searchParams.get("nalog"));
+    if (!orderId) return;
+
+    ordersApi
+      .byId(orderId)
+      .then(setDetail)
+      .catch((err) => toast.error(err.message));
+    setSearchParams({}, { replace: true });
+  }, [searchParams, setSearchParams, toast]);
+
+  useRealtimeEvent("ordersChanged", (payload) => {
+    refreshAll();
+
+    const ids = payload?.orderIds ?? [];
+    if (ids.length === 0) return;
+
+    setHighlighted((current) => new Set([...current, ...ids]));
+    setTimeout(() => {
+      setHighlighted((current) => {
+        const next = new Set(current);
+        ids.forEach((id) => next.delete(id));
+        return next;
+      });
+    }, 2600);
+
+    if (detail && ids.includes(detail.order.id)) {
+      ordersApi
+        .byId(detail.order.id)
+        .then(setDetail)
+        .catch(() => setDetail(null));
+    }
+  });
 
   const refreshAll = () => {
     if (view === "kanban") loadKanban();
@@ -316,6 +353,7 @@ export default function OrdersPage() {
             columns={kanbanColumns}
             canMove={can("orders.update")}
             canMoveTo={(status) => can(permissionForStatus(status))}
+            highlighted={highlighted}
             onMove={(order, status) => setStatusRequest({ order, status })}
             onOpen={openDetail}
           />

@@ -96,3 +96,9 @@ export const exportParams = (filter) =>
       ([key, value]) => !["page", "pageSize"].includes(key) && value !== "" && value != null
     )
   );
+
+export const notificationsApi = {
+  list: (take = 20) => unwrap(api.get("/api/notifications", { params: { take } })),
+  markRead: (id) => unwrap(api.post(`/api/notifications/${id}/read`)),
+  markAllRead: () => unwrap(api.post("/api/notifications/read-all")),
+};

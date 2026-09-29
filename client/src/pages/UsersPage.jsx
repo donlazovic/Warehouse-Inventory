@@ -31,6 +31,7 @@ import ResetPasswordDialog from "../components/users/ResetPasswordDialog";
 import RoleEditDialog from "../components/users/RoleEditDialog";
 import UserFormDialog from "../components/users/UserFormDialog";
 import usePagedQuery from "../hooks/usePagedQuery";
+import useRealtimeEvent from "../hooks/useRealtimeEvent";
 import { formatDateTime } from "../utils/format";
 
 const statusTabs = [
@@ -119,6 +120,11 @@ export default function UsersPage() {
     loadMeta();
     rolesApi.tree().then(setTree).catch(() => {});
   }, [loadMeta]);
+
+  useRealtimeEvent("pendingUsersChanged", () => {
+    query.reload();
+    loadMeta();
+  });
 
   const afterChange = (message) => {
     toast.success(message);

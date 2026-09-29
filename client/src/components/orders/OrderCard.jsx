@@ -9,7 +9,7 @@ const routeOf = (order) =>
     ? [order.supplierName ?? "Dobavljac", order.destinationLocationName ?? "Magacin"]
     : [order.sourceLocationName ?? "Magacin", order.storeName ?? "Objekat"];
 
-export default function OrderCard({ order, draggable, onDragStart, onDragEnd, onClick }) {
+export default function OrderCard({ order, draggable, highlighted = false, onDragStart, onDragEnd, onClick }) {
   const [from, to] = routeOf(order);
 
   return (
@@ -25,6 +25,13 @@ export default function OrderCard({ order, draggable, onDragStart, onDragEnd, on
         cursor: draggable ? "grab" : "pointer",
         borderLeft: "3px solid",
         borderLeftColor: statusColors[order.status],
+        "@keyframes cardPulse": {
+          "0%": { boxShadow: "0 0 0 0 rgba(31, 95, 75, 0.45)" },
+          "100%": { boxShadow: "0 0 0 10px rgba(31, 95, 75, 0)" },
+        },
+        animation: highlighted ? "cardPulse 1.1s ease-out 2" : "none",
+        bgcolor: highlighted ? "#F3F8F6" : "background.paper",
+        transition: "background-color 600ms",
         "&:active": { cursor: draggable ? "grabbing" : "pointer" },
         "&:hover": { borderColor: "text.secondary", borderLeftColor: statusColors[order.status] },
       }}

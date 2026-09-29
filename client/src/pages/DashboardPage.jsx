@@ -3,7 +3,7 @@ import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import OutputIcon from "@mui/icons-material/Output";
 import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import { Alert, Box, Link as MuiLink, Paper, Stack, Typography } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Area,
@@ -20,6 +20,7 @@ import {
 import { reportsApi } from "../api/endpoints";
 import { useAuth } from "../auth/AuthContext";
 import PageHeader from "../components/common/PageHeader";
+import useRealtimeEvent from "../hooks/useRealtimeEvent";
 import StatCard, { percentChange, StatGrid } from "../components/common/StatCard";
 import { monoFont, statusColors } from "../theme";
 import {
@@ -75,10 +76,17 @@ export default function DashboardPage() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (!can("reports.view")) return;
+  const canSeeReports = can("reports.view");
+
+  const load = useCallback(() => {
+    if (!canSeeReports) return;
     reportsApi.dashboard().then(setData).catch((err) => setError(err.message));
-  }, [can]);
+  }, [canSeeReports]);
+
+  useEffect(load, [load]);
+
+  useRealtimeEvent("ordersChanged", load);
+  useRealtimeEvent("stockChanged", load);
 
   const header = (
     <PageHeader

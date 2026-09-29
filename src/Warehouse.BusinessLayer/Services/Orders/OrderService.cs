@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Warehouse.BusinessLayer.Common;
 using Warehouse.BusinessLayer.DTOs.Orders;
+using Warehouse.BusinessLayer.Realtime;
 using Warehouse.BusinessLayer.Services.Inventory;
 using Warehouse.DataLayer.Repositories;
 using Warehouse.Domain.Entities.Catalog;
@@ -25,11 +26,13 @@ public class OrderService : IOrderService
 
     private readonly IUnitOfWork _uow;
     private readonly IStockService _stockService;
+    private readonly IEventCollector _events;
 
-    public OrderService(IUnitOfWork uow, IStockService stockService)
+    public OrderService(IUnitOfWork uow, IStockService stockService, IEventCollector events)
     {
         _uow = uow;
         _stockService = stockService;
+        _events = events;
     }
 
     public async Task<PagedResult<OrderDto>> GetPagedAsync(OrderFilterRequest filter, CancellationToken ct = default)
@@ -143,6 +146,8 @@ public class OrderService : IOrderService
         await _uow.Repository<Order>().AddAsync(order, ct);
         await _uow.SaveChangesAsync(ct);
 
+        _events.Add(new OrderChangedEvent(order.Id, null, OrderStatus.Draft, currentUserId));
+
         return await GetByIdAsync(order.Id, ct);
     }
 
@@ -182,6 +187,8 @@ public class OrderService : IOrderService
         repo.Update(order);
         await _uow.SaveChangesAsync(ct);
 
+        _events.Add(new OrderChangedEvent(id, order.Status, order.Status, null));
+
         return await GetByIdAsync(id, ct);
     }
 
@@ -197,6 +204,8 @@ public class OrderService : IOrderService
 
         repo.Remove(order);
         await _uow.SaveChangesAsync(ct);
+
+        _events.Add(new OrderChangedEvent(id, order.Status, order.Status, null));
     }
 
     public async Task<OrderDetailDto> ChangeStatusAsync(int id, ChangeOrderStatusRequest request, int currentUserId, CancellationToken ct = default)
@@ -253,6 +262,8 @@ public class OrderService : IOrderService
         repo.Update(order);
         await _uow.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
+
+        _events.Add(new OrderChangedEvent(id, previousStatus, request.Status, currentUserId));
 
         return await GetByIdAsync(id, ct);
     }

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Warehouse.BusinessLayer.Common;
 using Warehouse.BusinessLayer.DTOs.Inventory;
+using Warehouse.BusinessLayer.Realtime;
 using Warehouse.DataLayer.Repositories;
 using Warehouse.Domain.Entities.Catalog;
 using Warehouse.Domain.Entities.Inventory;
@@ -11,8 +12,13 @@ namespace Warehouse.BusinessLayer.Services.Inventory;
 public class StockService : IStockService
 {
     private readonly IUnitOfWork _uow;
+    private readonly IEventCollector _events;
 
-    public StockService(IUnitOfWork uow) => _uow = uow;
+    public StockService(IUnitOfWork uow, IEventCollector events)
+    {
+        _uow = uow;
+        _events = events;
+    }
 
     public async Task<PagedResult<StockItemDto>> GetStockAsync(StockFilterRequest filter, CancellationToken ct = default)
     {
@@ -315,15 +321,19 @@ public class StockService : IStockService
                     $"Nedovoljna kolicina za proizvod \"{name}\". Dostupno: {source.Quantity:0.###}, potrebno: {quantity:0.###}.");
             }
 
+            var before = source.Quantity;
             source.Quantity -= quantity;
             _uow.Repository<StockItem>().Update(source);
+            _events.Add(new StockChangedEvent(productId, fromLocationId.Value, before, source.Quantity));
         }
 
         if (toLocationId.HasValue)
         {
             var destination = await GetOrCreateStockItemAsync(productId, toLocationId.Value, ct);
+            var before = destination.Quantity;
             destination.Quantity += quantity;
             _uow.Repository<StockItem>().Update(destination);
+            _events.Add(new StockChangedEvent(productId, toLocationId.Value, before, destination.Quantity));
         }
 
         await _uow.Repository<StockMovement>().AddAsync(new StockMovement

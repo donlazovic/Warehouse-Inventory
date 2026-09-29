@@ -32,6 +32,7 @@ import IssueStockDialog from "../components/stock/IssueStockDialog";
 import ReconciliationDialog from "../components/stock/ReconciliationDialog";
 import StockLimitsDialog from "../components/stock/StockLimitsDialog";
 import usePagedQuery from "../hooks/usePagedQuery";
+import useRealtimeEvent from "../hooks/useRealtimeEvent";
 import { monoFont } from "../theme";
 import { formatDateTime, formatQuantity, locationTypeLabels, unitLabels } from "../utils/format";
 
@@ -65,6 +66,8 @@ export default function StockPage() {
     categoriesApi.list({ pageSize: 100, isActive: true }).then((r) => setCategories(r.items)).catch(() => {});
     productsApi.list({ pageSize: 100, isActive: true }).then((r) => setProducts(r.items)).catch(() => {});
   }, []);
+
+  useRealtimeEvent("stockChanged", () => query.reload());
 
   const afterSave = (message) => {
     toast.success(message);

@@ -1,11 +1,13 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using QuestPDF.Infrastructure;
+using Warehouse.BusinessLayer.Realtime;
 using Warehouse.BusinessLayer.Services.Auth;
 using Warehouse.BusinessLayer.Services.Catalog;
 using Warehouse.BusinessLayer.Services.Export;
 using Warehouse.BusinessLayer.Services.Identity;
 using Warehouse.BusinessLayer.Services.Inventory;
+using Warehouse.BusinessLayer.Services.Notifications;
 using Warehouse.BusinessLayer.Services.Orders;
 using Warehouse.BusinessLayer.Services.Partners;
 using Warehouse.BusinessLayer.Services.Reports;
@@ -40,6 +42,10 @@ public static class DependencyInjection
 
         services.AddScoped<IReportService, ReportService>();
         services.AddScoped<IExportService, ExportService>();
+
+        services.AddScoped<IEventCollector, EventCollector>();
+        services.AddScoped<IRealtimeDispatcher, RealtimeDispatcher>();
+        services.AddScoped<INotificationService, NotificationService>();
 
         return services;
     }

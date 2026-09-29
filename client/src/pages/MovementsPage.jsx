@@ -7,6 +7,7 @@ import DataTable from "../components/common/DataTable";
 import ExportMenu from "../components/common/ExportMenu";
 import PageHeader from "../components/common/PageHeader";
 import usePagedQuery from "../hooks/usePagedQuery";
+import useRealtimeEvent from "../hooks/useRealtimeEvent";
 import { monoFont } from "../theme";
 import {
   endOfDayIso,
@@ -37,6 +38,8 @@ export default function MovementsPage() {
   useEffect(() => {
     locationsApi.lookup().then(setLocations).catch(() => {});
   }, []);
+
+  useRealtimeEvent("stockChanged", () => query.reload());
 
   const setDate = (field) => (event) => {
     const value = event.target.value;

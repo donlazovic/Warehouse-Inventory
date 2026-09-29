@@ -17,6 +17,7 @@ import RegisterPage from "./pages/RegisterPage";
 import ReportsPage from "./pages/ReportsPage";
 import StockPage from "./pages/StockPage";
 import UsersPage from "./pages/UsersPage";
+import { RealtimeProvider } from "./realtime/RealtimeProvider";
 import theme from "./theme";
 
 const guarded = (permission, element) => (
@@ -30,6 +31,7 @@ export default function App() {
       <ToastProvider>
         <BrowserRouter>
           <AuthProvider>
+            <RealtimeProvider>
             <Routes>
               <Route path="/prijava" element={<LoginPage />} />
               <Route path="/registracija" element={<RegisterPage />} />
@@ -55,6 +57,7 @@ export default function App() {
                 <Route path="*" element={<NotFoundPage />} />
               </Route>
             </Routes>
+            </RealtimeProvider>
           </AuthProvider>
         </BrowserRouter>
       </ToastProvider>

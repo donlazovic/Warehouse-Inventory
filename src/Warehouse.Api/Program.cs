@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.IdentityModel.Tokens.Jwt;
@@ -8,8 +9,10 @@ using System.Text;
 using System.Threading.RateLimiting;
 using Warehouse.Api.Authorization;
 using Warehouse.Api.Extensions;
+using Warehouse.Api.Realtime;
 using Warehouse.BusinessLayer;
 using Warehouse.BusinessLayer.Common;
+using Warehouse.BusinessLayer.Realtime;
 using Warehouse.BusinessLayer.Settings;
 using Warehouse.DataLayer;
 
@@ -20,7 +23,11 @@ JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 builder.Services.AddDataLayer(builder.Configuration);
 builder.Services.AddBusinessLayer(builder.Configuration);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers(options => options.Filters.Add<RealtimeFlushFilter>());
+
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<IUserIdProvider, UidUserIdProvider>();
+builder.Services.AddSingleton<IRealtimePublisher, SignalRPublisher>();
 
 var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()!;
 
@@ -41,6 +48,19 @@ builder.Services
             RoleClaimType = AppClaimTypes.Role,
             NameClaimType = AppClaimTypes.FullName,
             ClockSkew = TimeSpan.FromSeconds(30)
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var token = context.Request.Query["access_token"];
+
+                if (!string.IsNullOrEmpty(token) && context.HttpContext.Request.Path.StartsWithSegments("/hubs"))
+                    context.Token = token;
+
+                return Task.CompletedTask;
+            }
         };
     });
 
@@ -72,7 +92,8 @@ builder.Services.AddCors(options =>
     options.AddPolicy("client", policy => policy
         .WithOrigins("http://localhost:5173")
         .AllowAnyHeader()
-        .AllowAnyMethod());
+        .AllowAnyMethod()
+        .AllowCredentials());
 });
 
 builder.Services.AddEndpointsApiExplorer();
@@ -117,5 +138,6 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<LiveHub>("/hubs/live");
 
 app.Run();
