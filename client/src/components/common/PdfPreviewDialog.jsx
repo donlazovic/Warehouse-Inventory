@@ -51,7 +51,7 @@ export default function PdfPreviewDialog({ open, title, fileName, load, onClose 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
       <DialogTitle>{title}</DialogTitle>
-      <DialogContent dividers sx={{ p: 0, height: "78vh", bgcolor: "#E9ECEE" }}>
+      <DialogContent dividers sx={{ p: 0, height: "78vh", bgcolor: "surface.preview" }}>
         {loading && (
           <Box sx={{ height: "100%", display: "grid", placeItems: "center" }}>
             <CircularProgress size={28} />

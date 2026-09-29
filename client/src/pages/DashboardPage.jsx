@@ -3,6 +3,7 @@ import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import OutputIcon from "@mui/icons-material/Output";
 import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import { Alert, Box, Link as MuiLink, Paper, Stack, Typography } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -24,7 +25,6 @@ import useRealtimeEvent from "../hooks/useRealtimeEvent";
 import StatCard, { percentChange, StatGrid } from "../components/common/StatCard";
 import { monoFont, statusColors } from "../theme";
 import {
-  chartColors,
   formatCompact,
   formatMoney,
   formatQuantity,
@@ -32,10 +32,10 @@ import {
   unitLabels,
 } from "../utils/format";
 
-const flowSeries = [
-  { key: "receivedValue", label: "Ulaz", color: chartColors.received },
-  { key: "transferredValue", label: "Prenos", color: chartColors.transferred },
-  { key: "issuedValue", label: "Izlaz", color: chartColors.issued },
+const flowKeys = [
+  { key: "receivedValue", label: "Ulaz", tone: "received" },
+  { key: "transferredValue", label: "Prenos", tone: "transferred" },
+  { key: "issuedValue", label: "Izlaz", tone: "issued" },
 ];
 
 function Panel({ title, action, children, sx }) {
@@ -62,7 +62,7 @@ function FlowTooltip({ active, payload, label }) {
         <Stack key={entry.dataKey} direction="row" spacing={1} alignItems="center">
           <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: entry.color }} />
           <Typography variant="body2" sx={{ fontSize: "0.78rem", flexGrow: 1 }}>
-            {flowSeries.find((s) => s.key === entry.dataKey)?.label}
+            {flowKeys.find((s) => s.key === entry.dataKey)?.label}
           </Typography>
           <Typography sx={{ fontFamily: monoFont, fontSize: "0.78rem" }}>{formatMoney(entry.value)}</Typography>
         </Stack>
@@ -73,6 +73,8 @@ function FlowTooltip({ active, payload, label }) {
 
 export default function DashboardPage() {
   const { user, can } = useAuth();
+  const chart = useTheme().palette.chart;
+  const flowSeries = flowKeys.map((item) => ({ ...item, color: chart[item.tone] }));
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
 
@@ -172,19 +174,19 @@ export default function DashboardPage() {
           <Box sx={{ height: 260 }}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={data.dailyFlow} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid stroke="#EEF1F2" vertical={false} />
+                <CartesianGrid stroke={chart.grid} vertical={false} />
                 <XAxis
                   dataKey="date"
                   tickFormatter={(value) =>
                     new Date(value).toLocaleDateString("sr-RS", { day: "2-digit", month: "2-digit" })
                   }
-                  tick={{ fontSize: 11, fill: "#5A6169" }}
+                  tick={{ fontSize: 11, fill: chart.axis }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
                   tickFormatter={formatCompact}
-                  tick={{ fontSize: 11, fill: "#5A6169" }}
+                  tick={{ fontSize: 11, fill: chart.axis }}
                   axisLine={false}
                   tickLine={false}
                   width={52}
@@ -229,7 +231,7 @@ export default function DashboardPage() {
                       stroke="none"
                     >
                       {data.stockByCategory.map((item, index) => (
-                        <Cell key={item.category} fill={chartColors.palette[index % chartColors.palette.length]} />
+                        <Cell key={item.category} fill={chart.palette[index % chart.palette.length]} />
                       ))}
                     </Pie>
                   </PieChart>
@@ -252,7 +254,7 @@ export default function DashboardPage() {
                         width: 8,
                         height: 8,
                         borderRadius: "50%",
-                        bgcolor: chartColors.palette[index % chartColors.palette.length],
+                        bgcolor: chart.palette[index % chart.palette.length],
                         flexShrink: 0,
                       }}
                     />
@@ -325,7 +327,7 @@ export default function DashboardPage() {
                   <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.75rem" }}>
                     {item.storeName ?? item.locationCode}
                   </Typography>
-                  <Box sx={{ mt: 0.5, height: 4, bgcolor: "#F4E6DA", borderRadius: 2, overflow: "hidden" }}>
+                  <Box sx={{ mt: 0.5, height: 4, bgcolor: "tint.warningTrack", borderRadius: 2, overflow: "hidden" }}>
                     <Box
                       sx={{
                         height: "100%",
@@ -359,7 +361,7 @@ export default function DashboardPage() {
                 <Typography variant="body2" sx={{ width: 120, flexShrink: 0, fontSize: "0.82rem" }}>
                   {orderStatusLabels[item.status]}
                 </Typography>
-                <Box sx={{ flexGrow: 1, height: 6, bgcolor: "#EEF1F2", borderRadius: 3, overflow: "hidden" }}>
+                <Box sx={{ flexGrow: 1, height: 6, bgcolor: "surface.track", borderRadius: 3, overflow: "hidden" }}>
                   <Box
                     sx={{
                       height: "100%",

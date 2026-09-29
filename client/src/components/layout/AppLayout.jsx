@@ -28,7 +28,8 @@ import { notificationsApi, usersApi } from "../../api/endpoints";
 import { useAuth } from "../../auth/AuthContext";
 import useRealtimeEvent from "../../hooks/useRealtimeEvent";
 import { useRealtime } from "../../realtime/RealtimeProvider";
-import { sidebar } from "../../theme";
+import { useTheme } from "@mui/material/styles";
+import { ColorModeToggle } from "../../ColorMode";
 import Logo from "../common/Logo";
 import { useToast } from "../common/Toast";
 import { navigation } from "./navigation";
@@ -36,20 +37,20 @@ import { navigation } from "./navigation";
 const DRAWER_WIDTH = 256;
 
 const notificationColors = {
-  1: "#B4541A",
-  2: "#1F5F4B",
-  3: "#6B7280",
-  4: "#14532D",
-  5: "#9B2C2C",
-  6: "#B4541A",
-  7: "#1D5A87",
+  1: "warning.main",
+  2: "primary.main",
+  3: "text.secondary",
+  4: "success.main",
+  5: "error.main",
+  6: "warning.main",
+  7: "secondary.main",
 };
 
 const connectionLabels = {
-  online: { label: "Uzivo", color: "#2F9E6E", hint: "Promene drugih korisnika stizu odmah." },
-  connecting: { label: "Povezivanje", color: "#C9A227", hint: "Uspostavljanje veze sa serverom." },
-  reconnecting: { label: "Ponovno povezivanje", color: "#C9A227", hint: "Veza je prekinuta, pokusava se ponovo." },
-  offline: { label: "Van veze", color: "#9B2C2C", hint: "Podaci se ne osvezavaju sami. Proverite da li API radi." },
+  online: { label: "Uzivo", tone: "online", hint: "Promene drugih korisnika stizu odmah." },
+  connecting: { label: "Povezivanje", tone: "pending", hint: "Uspostavljanje veze sa serverom." },
+  reconnecting: { label: "Ponovno povezivanje", tone: "pending", hint: "Veza je prekinuta, pokusava se ponovo." },
+  offline: { label: "Van veze", tone: "offline", hint: "Podaci se ne osvezavaju sami. Proverite da li API radi." },
 };
 
 const initialsOf = (user) =>
@@ -65,6 +66,8 @@ const timeAgo = (value) => {
 
 export default function AppLayout() {
   const { user, signOut, can } = useAuth();
+  const theme = useTheme();
+  const sidebar = theme.palette.sidebar;
   const { status } = useRealtime();
   const toast = useToast();
   const navigate = useNavigate();
@@ -133,6 +136,7 @@ export default function AppLayout() {
 
   const badges = { pendingUsers };
   const connection = connectionLabels[status] ?? connectionLabels.offline;
+  const connectionColor = theme.palette.connection[connection.tone];
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
@@ -153,7 +157,7 @@ export default function AppLayout() {
         }}
       >
         <Stack direction="row" alignItems="center" spacing={1.5} sx={{ px: 2.5, py: 2.5 }}>
-          <Box sx={{ color: "#4EA88A" }}>
+          <Box sx={{ color: sidebar.logo }}>
             <Logo size={26} />
           </Box>
           <Box>
@@ -203,8 +207,8 @@ export default function AppLayout() {
                             minWidth: 20,
                             px: 0.75,
                             borderRadius: 10,
-                            bgcolor: "#B4541A",
-                            color: "#FFFFFF",
+                            bgcolor: "warning.main",
+                            color: "warning.contrastText",
                             fontSize: "0.7rem",
                             fontWeight: 600,
                             textAlign: "center",
@@ -225,7 +229,7 @@ export default function AppLayout() {
         <Divider sx={{ borderColor: sidebar.border }} />
 
         <Stack direction="row" alignItems="center" spacing={1.5} sx={{ px: 2.5, py: 2 }}>
-          <Avatar sx={{ width: 34, height: 34, bgcolor: "#2F7A61", fontSize: "0.82rem", fontWeight: 600 }}>
+          <Avatar sx={{ width: 34, height: 34, bgcolor: "avatar.strong", color: "#FFFFFF", fontSize: "0.82rem", fontWeight: 600 }}>
             {initialsOf(user)}
           </Avatar>
           <Box sx={{ minWidth: 0 }}>
@@ -253,8 +257,8 @@ export default function AppLayout() {
                     width: 8,
                     height: 8,
                     borderRadius: "50%",
-                    bgcolor: connection.color,
-                    boxShadow: status === "online" ? `0 0 0 3px ${connection.color}33` : "none",
+                    bgcolor: connectionColor,
+                    boxShadow: status === "online" ? `0 0 0 3px ${connectionColor}33` : "none",
                   }}
                 />
                 <Typography variant="body2" sx={{ fontSize: "0.75rem", color: "text.secondary" }}>
@@ -262,6 +266,8 @@ export default function AppLayout() {
                 </Typography>
               </Stack>
             </Tooltip>
+
+            <ColorModeToggle />
 
             <Tooltip title="Obavestenja">
               <IconButton size="small" onClick={(event) => setBellAnchor(event.currentTarget)}>
@@ -278,7 +284,7 @@ export default function AppLayout() {
             </Tooltip>
 
             <IconButton size="small" sx={{ ml: 0.5 }} onClick={(event) => setUserMenu(event.currentTarget)}>
-              <Avatar sx={{ width: 30, height: 30, bgcolor: "#2F7A61", fontSize: "0.75rem", fontWeight: 600 }}>
+              <Avatar sx={{ width: 30, height: 30, bgcolor: "avatar.strong", color: "#FFFFFF", fontSize: "0.75rem", fontWeight: 600 }}>
                 {initialsOf(user)}
               </Avatar>
             </IconButton>
@@ -329,8 +335,8 @@ export default function AppLayout() {
                     cursor: "pointer",
                     borderBottom: "1px solid",
                     borderColor: "divider",
-                    bgcolor: notification.isRead ? "transparent" : "#FAF6F1",
-                    "&:hover": { bgcolor: notification.isRead ? "#F7F9FA" : "#F5EDE3" },
+                    bgcolor: notification.isRead ? "transparent" : "tint.unread",
+                    "&:hover": { bgcolor: notification.isRead ? "tint.readHover" : "tint.unreadHover" },
                   }}
                 >
                   <Box
@@ -341,7 +347,8 @@ export default function AppLayout() {
                       borderRadius: "50%",
                       flexShrink: 0,
                       bgcolor: notification.isRead ? "transparent" : notificationColors[notification.type],
-                      border: notification.isRead ? "1px solid #C9CFD3" : "none",
+                      border: notification.isRead ? "1px solid" : "none",
+                      borderColor: "text.disabled",
                     }}
                   />
                   <Box sx={{ minWidth: 0, flexGrow: 1 }}>

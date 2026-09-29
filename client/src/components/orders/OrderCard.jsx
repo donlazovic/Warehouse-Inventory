@@ -1,6 +1,7 @@
 import ArrowRightAltIcon from "@mui/icons-material/ArrowRightAlt";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import { Box, Paper, Stack, Typography } from "@mui/material";
+import { alpha, useTheme } from "@mui/material/styles";
 import { monoFont, statusColors } from "../../theme";
 import { formatDateTime, formatMoney } from "../../utils/format";
 
@@ -10,6 +11,8 @@ const routeOf = (order) =>
     : [order.sourceLocationName ?? "Magacin", order.storeName ?? "Objekat"];
 
 export default function OrderCard({ order, draggable, highlighted = false, onDragStart, onDragEnd, onClick }) {
+  const theme = useTheme();
+  const pulse = theme.palette.primary.main;
   const [from, to] = routeOf(order);
 
   return (
@@ -26,11 +29,11 @@ export default function OrderCard({ order, draggable, highlighted = false, onDra
         borderLeft: "3px solid",
         borderLeftColor: statusColors[order.status],
         "@keyframes cardPulse": {
-          "0%": { boxShadow: "0 0 0 0 rgba(31, 95, 75, 0.45)" },
-          "100%": { boxShadow: "0 0 0 10px rgba(31, 95, 75, 0)" },
+          "0%": { boxShadow: `0 0 0 0 ${alpha(pulse, 0.45)}` },
+          "100%": { boxShadow: `0 0 0 10px ${alpha(pulse, 0)}` },
         },
         animation: highlighted ? "cardPulse 1.1s ease-out 2" : "none",
-        bgcolor: highlighted ? "#F3F8F6" : "background.paper",
+        bgcolor: highlighted ? "surface.highlight" : "background.paper",
         transition: "background-color 600ms",
         "&:active": { cursor: draggable ? "grabbing" : "pointer" },
         "&:hover": { borderColor: "text.secondary", borderLeftColor: statusColors[order.status] },

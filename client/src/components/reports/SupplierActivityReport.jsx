@@ -1,4 +1,5 @@
 import { Alert, Box, MenuItem, Paper, TextField, Typography } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import { useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip as ChartTooltip, XAxis, YAxis } from "recharts";
 import { exportsApi, reportsApi, suppliersApi } from "../../api/endpoints";
@@ -6,7 +7,6 @@ import { useAuth } from "../../auth/AuthContext";
 import ExportMenu from "../common/ExportMenu";
 import { monoFont } from "../../theme";
 import {
-  chartColors,
   endOfDayIso,
   formatCompact,
   formatMoney,
@@ -23,6 +23,8 @@ import { DateField, FilterBar } from "./ReportFilters";
 
 export default function SupplierActivityReport() {
   const { can } = useAuth();
+  const theme = useTheme();
+  const chart = theme.palette.chart;
   const [suppliers, setSuppliers] = useState([]);
   const [filter, setFilter] = useState({ supplierId: "", from: monthsAgoInput(6), to: toDateInput(new Date()) });
   const [report, setReport] = useState(null);
@@ -164,15 +166,21 @@ export default function SupplierActivityReport() {
                 <Box sx={{ height: 260 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={monthly} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                      <CartesianGrid stroke="#EEF1F2" vertical={false} />
-                      <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#5A6169" }} axisLine={false} tickLine={false} />
-                      <YAxis tickFormatter={formatCompact} tick={{ fontSize: 11, fill: "#5A6169" }} axisLine={false} tickLine={false} width={52} />
+                      <CartesianGrid stroke={chart.grid} vertical={false} />
+                      <XAxis dataKey="label" tick={{ fontSize: 11, fill: chart.axis }} axisLine={false} tickLine={false} />
+                      <YAxis tickFormatter={formatCompact} tick={{ fontSize: 11, fill: chart.axis }} axisLine={false} tickLine={false} width={52} />
                       <ChartTooltip
                         formatter={(value) => [formatMoney(value), "Vrednost"]}
-                        labelStyle={{ fontWeight: 600 }}
-                        cursor={{ fill: "#F2F4F5" }}
+                        labelStyle={{ fontWeight: 600, color: theme.palette.text.primary }}
+                        itemStyle={{ color: theme.palette.text.primary }}
+                        contentStyle={{
+                          backgroundColor: theme.palette.background.paper,
+                          borderColor: theme.palette.divider,
+                          borderRadius: 6,
+                        }}
+                        cursor={{ fill: chart.cursor }}
                       />
-                      <Bar dataKey="value" fill={chartColors.received} radius={[4, 4, 0, 0]} maxBarSize={48} />
+                      <Bar dataKey="value" fill={chart.received} radius={[4, 4, 0, 0]} maxBarSize={48} />
                     </BarChart>
                   </ResponsiveContainer>
                 </Box>

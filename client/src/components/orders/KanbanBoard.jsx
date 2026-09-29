@@ -2,7 +2,9 @@ import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { Box, Collapse, IconButton, Paper, Stack, Typography } from "@mui/material";
 import { useState } from "react";
-import { monoFont, statusColors, statusTints } from "../../theme";
+import { monoFont, statusColors } from "../../theme";
+
+const tintOf = (status) => `statusTint.${status}`;
 import { formatMoney } from "../../utils/format";
 import OrderCard from "./OrderCard";
 
@@ -110,7 +112,7 @@ export default function KanbanBoard({ columns, canMove, canMoveTo = () => true, 
                 sx={{
                   px: 1.5,
                   py: 0.75,
-                  bgcolor: statusTints[column.status],
+                  bgcolor: tintOf(column.status),
                   borderBottom: "1px solid",
                   borderColor: "divider",
                   fontFamily: monoFont,
@@ -125,7 +127,7 @@ export default function KanbanBoard({ columns, canMove, canMoveTo = () => true, 
                 sx={{
                   p: 1.25,
                   minHeight: 180,
-                  bgcolor: isHovered ? statusTints[column.status] : "background.paper",
+                  bgcolor: isHovered ? tintOf(column.status) : "background.paper",
                   transition: "background-color 120ms",
                 }}
               >
@@ -163,7 +165,7 @@ export default function KanbanBoard({ columns, canMove, canMoveTo = () => true, 
             overflow: "hidden",
             borderColor: dragged && canDropOn(CANCELLED) ? statusColors[CANCELLED] : "divider",
             borderWidth: dragged && canDropOn(CANCELLED) ? 2 : 1,
-            bgcolor: hoveredStatus === CANCELLED ? statusTints[CANCELLED] : "background.paper",
+            bgcolor: hoveredStatus === CANCELLED ? tintOf(CANCELLED) : "background.paper",
             transition: "background-color 120ms, border-color 120ms",
           }}
           {...dropProps(CANCELLED)}

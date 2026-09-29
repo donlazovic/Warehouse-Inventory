@@ -60,7 +60,7 @@ export default function ReconciliationDialog({ open, onClose }) {
 
         {result && !loading && (
           result.isConsistent ? (
-            <Stack direction="row" spacing={1.5} alignItems="center" sx={{ p: 2, bgcolor: "#EDF4F1", borderRadius: 1 }}>
+            <Stack direction="row" spacing={1.5} alignItems="center" sx={{ p: 2, bgcolor: "tint.success", borderRadius: 1 }}>
               <CheckCircleIcon sx={{ color: "success.main" }} />
               <Box>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>

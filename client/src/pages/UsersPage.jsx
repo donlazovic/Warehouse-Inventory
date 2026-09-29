@@ -152,7 +152,7 @@ export default function UsersPage() {
       sortable: true,
       render: (row) => (
         <Stack direction="row" spacing={1.5} alignItems="center">
-          <Avatar sx={{ width: 30, height: 30, fontSize: "0.72rem", fontWeight: 600, bgcolor: "#DDE7E3", color: "#1F5F4B" }}>
+          <Avatar sx={{ width: 30, height: 30, fontSize: "0.72rem", fontWeight: 600, bgcolor: "avatar.bg", color: "avatar.fg" }}>
             {`${row.firstName[0] ?? ""}${row.lastName[0] ?? ""}`.toUpperCase()}
           </Avatar>
           <Box>

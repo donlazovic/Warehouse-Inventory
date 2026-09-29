@@ -1,4 +1,3 @@
-import { CssBaseline, ThemeProvider } from "@mui/material";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthContext";
 import ProtectedRoute from "./auth/ProtectedRoute";
@@ -18,7 +17,7 @@ import ReportsPage from "./pages/ReportsPage";
 import StockPage from "./pages/StockPage";
 import UsersPage from "./pages/UsersPage";
 import { RealtimeProvider } from "./realtime/RealtimeProvider";
-import theme from "./theme";
+import { ColorModeProvider } from "./ColorMode";
 
 const guarded = (permission, element) => (
   <ProtectedRoute permission={permission}>{element}</ProtectedRoute>
@@ -26,8 +25,7 @@ const guarded = (permission, element) => (
 
 export default function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
+    <ColorModeProvider>
       <ToastProvider>
         <BrowserRouter>
           <AuthProvider>
@@ -61,6 +59,6 @@ export default function App() {
           </AuthProvider>
         </BrowserRouter>
       </ToastProvider>
-    </ThemeProvider>
+    </ColorModeProvider>
   );
 }

@@ -44,7 +44,7 @@ export default function DataTable({
               inset: 0,
               display: "grid",
               placeItems: "center",
-              bgcolor: "rgba(255,255,255,0.7)",
+              bgcolor: "surface.overlay",
               zIndex: 2,
             }}
           >

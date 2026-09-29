@@ -78,7 +78,7 @@ export default function ProductsPage() {
           }}
         >
           {row.isFavorite ? (
-            <StarIcon fontSize="small" sx={{ color: "#B4541A" }} />
+            <StarIcon fontSize="small" sx={{ color: "warning.main" }} />
           ) : (
             <StarBorderIcon fontSize="small" />
           )}
@@ -110,7 +110,7 @@ export default function ProductsPage() {
               sx={{
                 fontFamily: monoFont,
                 fontSize: "0.8rem",
-                color: below ? "#B4541A" : "inherit",
+                color: below ? "warning.main" : "inherit",
                 fontWeight: below ? 500 : 400,
               }}
             >

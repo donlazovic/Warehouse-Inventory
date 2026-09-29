@@ -39,7 +39,7 @@ export default function PermissionTree({ tree, selected, onChange, readOnly = fa
               sx={{
                 px: 1,
                 py: 0.25,
-                bgcolor: all ? "#EDF4F1" : some ? "#F7F9FA" : "background.paper",
+                bgcolor: all ? "tint.success" : some ? "surface.muted" : "background.paper",
                 borderBottom: "1px solid",
                 borderColor: "divider",
               }}
