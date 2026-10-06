@@ -54,7 +54,9 @@ export function CategorySelect({ categories, value, onChange }) {
 export function FilterBar({ children }) {
   return (
     <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-      <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ md: "center" }}>
+      <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{
+        alignItems: { md: "center" }
+      }}>
         {children}
       </Stack>
     </Paper>

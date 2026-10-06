@@ -1,3 +1,4 @@
+import useFitHeight from "../../hooks/useFitHeight";
 import {
   Box,
   CircularProgress,
@@ -29,6 +30,8 @@ export default function DataTable({
   emptyTitle = "Nema podataka",
   emptyHint,
 }) {
+  const [fitRef, fitHeight] = useFitHeight({ reserve: 88 });
+
   const handleSort = (field) => {
     if (!onSortChange) return;
     onSortChange(field, sortBy === field ? !sortDesc : false);
@@ -36,7 +39,7 @@ export default function DataTable({
 
   return (
     <Paper variant="outlined">
-      <TableContainer sx={{ position: "relative" }}>
+      <TableContainer ref={fitRef} sx={{ position: "relative", maxHeight: fitHeight ?? undefined }}>
         {loading && (
           <Box
             sx={{
@@ -52,7 +55,7 @@ export default function DataTable({
           </Box>
         )}
 
-        <Table size="small">
+        <Table size="small" stickyHeader>
           <TableHead>
             <TableRow>
               {columns.map((column) => (
@@ -85,7 +88,9 @@ export default function DataTable({
                     {emptyTitle}
                   </Typography>
                   {emptyHint && (
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{
+                      color: "text.secondary"
+                    }}>
                       {emptyHint}
                     </Typography>
                   )}

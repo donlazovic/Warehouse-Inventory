@@ -272,7 +272,13 @@ export default function OrderFormDialog({
       <Divider />
 
       <Box>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+        <Stack
+          direction="row"
+          sx={{
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 1
+          }}>
           <Typography variant="h3">Stavke</Typography>
           <Button
             size="small"
@@ -347,7 +353,13 @@ export default function OrderFormDialog({
           </TableBody>
         </Table>
 
-        <Stack direction="row" justifyContent="flex-end" sx={{ mt: 2, pr: 7 }}>
+        <Stack
+          direction="row"
+          sx={{
+            justifyContent: "flex-end",
+            mt: 2,
+            pr: 7
+          }}>
           <Typography variant="body2" sx={{ mr: 2, alignSelf: "center" }}>
             Ukupna vrednost
           </Typography>

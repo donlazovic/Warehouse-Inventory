@@ -46,7 +46,8 @@ public class StockService : IStockService
             query = query.Where(x => x.StorageLocation.LocationType == filter.LocationType);
 
         if (filter.OnlyBelowMinimum)
-            query = query.Where(x => x.Quantity < (x.MinStockOverride ?? x.Product.MinStock));
+            query = query.Where(x => x.Product.IsActive && x.StorageLocation.IsActive
+                                  && x.Quantity < (x.MinStockOverride ?? x.Product.MinStock));
 
         if (filter.OnlyInStock)
             query = query.Where(x => x.Quantity > 0);
@@ -395,6 +396,6 @@ public class StockService : IStockService
             x.MaxStockOverride ?? x.Product.MaxStock,
             x.MinStockOverride,
             x.MaxStockOverride,
-            x.Quantity < (x.MinStockOverride ?? x.Product.MinStock),
+            x.Product.IsActive && x.StorageLocation.IsActive && x.Quantity < (x.MinStockOverride ?? x.Product.MinStock),
             x.UpdatedAt));
 }

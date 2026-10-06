@@ -49,7 +49,9 @@ export default function OrderDetailDialog({ detail, canMoveTo, onChangeStatus, o
   return (
     <Dialog open onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle component="div">
-        <Stack direction="row" alignItems="center" spacing={1.5}>
+        <Stack direction="row" spacing={1.5} sx={{
+          alignItems: "center"
+        }}>
           <Typography sx={{ fontFamily: monoFont, fontSize: "1.05rem", fontWeight: 600 }}>
             {order.orderNumber}
           </Typography>
@@ -134,7 +136,9 @@ export default function OrderDetailDialog({ detail, canMoveTo, onChangeStatus, o
 
         <Stack spacing={1.5}>
           {history.map((entry, index) => (
-            <Stack key={index} direction="row" spacing={1.5} alignItems="flex-start">
+            <Stack key={index} direction="row" spacing={1.5} sx={{
+              alignItems: "flex-start"
+            }}>
               <Box
                 sx={{
                   width: 8,

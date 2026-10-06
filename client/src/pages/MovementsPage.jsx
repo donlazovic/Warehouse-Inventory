@@ -7,6 +7,8 @@ import DataTable from "../components/common/DataTable";
 import ExportMenu from "../components/common/ExportMenu";
 import PageHeader from "../components/common/PageHeader";
 import usePagedQuery from "../hooks/usePagedQuery";
+import useUrlFilterSync, { readUrlFilter } from "../hooks/useUrlFilter";
+import { useSearchParams } from "react-router-dom";
 import useRealtimeEvent from "../hooks/useRealtimeEvent";
 import { monoFont } from "../theme";
 import {
@@ -27,13 +29,22 @@ const sign = (row, locationId) => {
   return "";
 };
 
+const MOVEMENT_URL_FILTER = {
+  productId: "number",
+  movementType: "number",
+  locationId: "number",
+  issueReason: "number",
+};
+
 export default function MovementsPage() {
   const { can } = useAuth();
   const [locations, setLocations] = useState([]);
   const [range, setRange] = useState({ from: "", to: "" });
 
   const fetcher = useCallback((params) => stockApi.movements(params), []);
-  const query = usePagedQuery(fetcher, {});
+  const [searchParams] = useSearchParams();
+  const query = usePagedQuery(fetcher, readUrlFilter(searchParams, MOVEMENT_URL_FILTER));
+  useUrlFilterSync(MOVEMENT_URL_FILTER, query.patchFilter);
 
   useEffect(() => {
     locationsApi.lookup().then(setLocations).catch(() => {});
@@ -105,7 +116,13 @@ export default function MovementsPage() {
       field: "route",
       headerName: "Sa → na",
       render: (row) => (
-        <Stack direction="row" alignItems="center" spacing={0.5} sx={{ fontSize: "0.8rem" }}>
+        <Stack
+          direction="row"
+          spacing={0.5}
+          sx={{
+            alignItems: "center",
+            fontSize: "0.8rem"
+          }}>
           <Typography variant="body2" sx={{ fontSize: "0.8rem", color: row.fromLocationName ? "text.primary" : "text.disabled" }}>
             {row.fromLocationName ?? (row.movementType === 2 ? "Dobavljac" : "—")}
           </Typography>
@@ -130,7 +147,14 @@ export default function MovementsPage() {
             </Typography>
           )}
           {row.note && !row.orderNumber && (
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.78rem" }} noWrap title={row.note}>
+            <Typography
+              variant="body2"
+              noWrap
+              title={row.note}
+              sx={{
+                color: "text.secondary",
+                fontSize: "0.78rem"
+              }}>
               {row.note}
             </Typography>
           )}
@@ -222,6 +246,21 @@ export default function MovementsPage() {
           />
         </Stack>
       </Paper>
+
+      {query.filter.productId && (
+        <Stack direction="row" sx={{ alignItems: "center", gap: 1, mb: 2 }}>
+          <Typography variant="body2" sx={{ color: "text.secondary" }}>
+            Filtrirano po artiklu:
+          </Typography>
+          <Chip
+            size="small"
+            color="primary"
+            variant="outlined"
+            label={query.rows[0]?.productName ?? `#${query.filter.productId}`}
+            onDelete={() => query.patchFilter({ productId: null })}
+          />
+        </Stack>
+      )}
 
       {query.filter.locationId && (
         <Alert severity="info" variant="outlined" sx={{ mb: 2 }}>

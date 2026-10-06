@@ -1,3 +1,4 @@
+import useFitHeight from "../../hooks/useFitHeight";
 import {
   Paper,
   Table,
@@ -9,10 +10,11 @@ import {
   Typography,
 } from "@mui/material";
 
-export default function ReportTable({ columns, rows, rowKey, emptyText = "Nema podataka za izabrane filtere.", maxHeight = 560 }) {
+export default function ReportTable({ columns, rows, rowKey, emptyText = "Nema podataka za izabrane filtere.", maxHeight, reserve = 72 }) {
+  const [fitRef, fitHeight] = useFitHeight({ reserve });
   return (
     <Paper variant="outlined">
-      <TableContainer sx={{ maxHeight }}>
+      <TableContainer ref={fitRef} sx={{ maxHeight: maxHeight ?? fitHeight ?? undefined }}>
         <Table size="small" stickyHeader>
           <TableHead>
             <TableRow>
@@ -27,7 +29,9 @@ export default function ReportTable({ columns, rows, rowKey, emptyText = "Nema p
             {rows.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={columns.length} sx={{ py: 5, textAlign: "center" }}>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{
+                    color: "text.secondary"
+                  }}>
                     {emptyText}
                   </Typography>
                 </TableCell>

@@ -78,7 +78,9 @@ export default function StockLimitsDialog({ row, onClose, onSaved }) {
         />
       </Stack>
 
-      <Typography variant="body2" color="text.secondary">
+      <Typography variant="body2" sx={{
+        color: "text.secondary"
+      }}>
         Prodavnica obicno drzi mnogo manje od centralnog magacina, pa joj je potreban niži prag
         upozorenja od onog u katalogu.
       </Typography>

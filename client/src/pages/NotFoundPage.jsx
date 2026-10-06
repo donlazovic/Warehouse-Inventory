@@ -7,7 +7,11 @@ export default function NotFoundPage() {
       <Typography variant="h1" gutterBottom>
         Stranica ne postoji
       </Typography>
-      <Typography color="text.secondary" sx={{ mb: 3 }}>
+      <Typography
+        sx={{
+          color: "text.secondary",
+          mb: 3
+        }}>
         Adresa koju ste otvorili nije deo aplikacije. Moguce je da je link zastareo.
       </Typography>
       <Button component={Link} to="/" variant="contained">

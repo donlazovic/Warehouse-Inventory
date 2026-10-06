@@ -85,10 +85,14 @@ export default function KanbanBoard({ columns, canMove, canMoveTo = () => true, 
             >
               <Stack
                 direction="row"
-                alignItems="center"
                 spacing={1}
-                sx={{ bgcolor: statusColors[column.status], color: "#FFFFFF", px: 1.5, py: 1 }}
-              >
+                sx={{
+                  alignItems: "center",
+                  bgcolor: statusColors[column.status],
+                  color: "#FFFFFF",
+                  px: 1.5,
+                  py: 1
+                }}>
                 <Typography variant="body2" sx={{ fontWeight: 600, flexGrow: 1 }}>
                   {column.title}
                 </Typography>
@@ -172,11 +176,13 @@ export default function KanbanBoard({ columns, canMove, canMoveTo = () => true, 
         >
           <Stack
             direction="row"
-            alignItems="center"
             spacing={1}
-            sx={{ p: 1.5, cursor: "pointer" }}
             onClick={() => setCancelledOpen((current) => !current)}
-          >
+            sx={{
+              alignItems: "center",
+              p: 1.5,
+              cursor: "pointer"
+            }}>
             <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: statusColors[CANCELLED] }} />
             <Typography variant="body2" sx={{ fontWeight: 600 }}>
               {cancelledColumn.title}

@@ -35,7 +35,12 @@ export default function SnapshotReport({ locations, categories }) {
       render: (row) => (
         <Box>
           <Typography sx={{ fontFamily: monoFont, fontSize: "0.78rem" }}>{row.locationCode}</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.75rem" }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              fontSize: "0.75rem"
+            }}>
             {row.locationName}
           </Typography>
         </Box>
@@ -128,7 +133,13 @@ export default function SnapshotReport({ locations, categories }) {
             emptyText="Na izabrani dan nije bilo robe na stanju."
           />
 
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5, maxWidth: "80ch" }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mt: 1.5,
+              maxWidth: "80ch"
+            }}>
             Stanje nije preuzeto iz trenutnih zaliha, nego je izracunato ponovnim sabiranjem svih
             kretanja robe do kraja izabranog dana. Zato prikazuje stvarno stanje tog trenutka, cak i
             za datume u proslosti.

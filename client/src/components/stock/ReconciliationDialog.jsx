@@ -45,7 +45,12 @@ export default function ReconciliationDialog({ open, onClose }) {
       <DialogTitle>Provera uskladjenosti zaliha</DialogTitle>
 
       <DialogContent dividers>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            mb: 2
+          }}>
           Za svaku stavku zaliha sistem ponovo sabira sva kretanja robe od pocetka i poredi zbir sa
           upisanim stanjem. Ako se razlikuju, neko je stanje promenio mimo evidencije kretanja.
         </Typography>
@@ -60,13 +65,23 @@ export default function ReconciliationDialog({ open, onClose }) {
 
         {result && !loading && (
           result.isConsistent ? (
-            <Stack direction="row" spacing={1.5} alignItems="center" sx={{ p: 2, bgcolor: "tint.success", borderRadius: 1 }}>
+            <Stack
+              direction="row"
+              spacing={1.5}
+              sx={{
+                alignItems: "center",
+                p: 2,
+                bgcolor: "tint.success",
+                borderRadius: 1
+              }}>
               <CheckCircleIcon sx={{ color: "success.main" }} />
               <Box>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
                   Sve je uskladjeno
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{
+                  color: "text.secondary"
+                }}>
                   Provereno {result.checkedCount} stavki · {formatDateTime(result.checkedAt)}
                 </Typography>
               </Box>

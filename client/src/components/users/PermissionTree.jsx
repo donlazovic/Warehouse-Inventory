@@ -35,15 +35,14 @@ export default function PermissionTree({ tree, selected, onChange, readOnly = fa
           <Paper key={module.id} variant="outlined" sx={{ overflow: "hidden" }}>
             <Stack
               direction="row"
-              alignItems="center"
               sx={{
+                alignItems: "center",
                 px: 1,
                 py: 0.25,
                 bgcolor: all ? "tint.success" : some ? "surface.muted" : "background.paper",
                 borderBottom: "1px solid",
-                borderColor: "divider",
-              }}
-            >
+                borderColor: "divider"
+              }}>
               <FormControlLabel
                 sx={{ flexGrow: 1, mr: 0 }}
                 control={
@@ -80,7 +79,9 @@ export default function PermissionTree({ tree, selected, onChange, readOnly = fa
                     />
                   }
                   label={
-                    <Stack direction="row" spacing={1} alignItems="baseline">
+                    <Stack direction="row" spacing={1} sx={{
+                      alignItems: "baseline"
+                    }}>
                       <Typography variant="body2">{child.name}</Typography>
                       <Typography
                         variant="body2"

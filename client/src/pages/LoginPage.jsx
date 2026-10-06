@@ -58,7 +58,12 @@ export default function LoginPage() {
         <Typography variant="h2" gutterBottom>
           Prijava
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            mb: 3
+          }}>
           Unesite podatke svog naloga da biste nastavili.
         </Typography>
 
@@ -91,7 +96,12 @@ export default function LoginPage() {
             fullWidth
           />
 
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Stack
+            direction="row"
+            sx={{
+              justifyContent: "space-between",
+              alignItems: "center"
+            }}>
             <FormControlLabel
               control={
                 <Checkbox size="small" checked={remember} onChange={(event) => setRemember(event.target.checked)} />
@@ -107,7 +117,12 @@ export default function LoginPage() {
             {submitting ? "Prijavljivanje..." : "Prijavi se"}
           </Button>
 
-          <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center" }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              textAlign: "center"
+            }}>
             Nemate nalog?{" "}
             <Link component={RouterLink} to="/registracija" underline="hover">
               Zatrazite pristup

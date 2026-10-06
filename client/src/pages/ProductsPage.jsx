@@ -175,7 +175,9 @@ export default function ProductsPage() {
       />
 
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-        <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ md: "center" }}>
+        <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{
+          alignItems: { md: "center" }
+        }}>
           <TextField
             label="Pretraga po nazivu ili SKU"
             value={query.filter.search ?? ""}
@@ -242,7 +244,12 @@ export default function ProductsPage() {
         emptyHint="Promenite filtere ili dodajte prvi proizvod u katalog."
       />
 
-      <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+      <Typography
+        variant="body2"
+        sx={{
+          color: "text.secondary",
+          mt: 2
+        }}>
         Kolicine ispod minimalne zalihe prikazane su naglaseno.
       </Typography>
 

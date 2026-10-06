@@ -67,7 +67,12 @@ export default function RegisterPage() {
         <Typography variant="h2" gutterBottom>
           Zahtev za pristup
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            mb: 3
+          }}>
           Nalog postaje aktivan kada ga administrator odobri i dodeli vam ulogu.
         </Typography>
 
@@ -112,7 +117,12 @@ export default function RegisterPage() {
             {submitting ? "Slanje..." : "Posalji zahtev"}
           </Button>
 
-          <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center" }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              textAlign: "center"
+            }}>
             Vec imate nalog?{" "}
             <Link component={RouterLink} to="/prijava" underline="hover">
               Prijavite se

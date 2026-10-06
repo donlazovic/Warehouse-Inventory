@@ -43,7 +43,14 @@ export default function OrderCard({ order, draggable, highlighted = false, onDra
         {order.orderNumber}
       </Typography>
 
-      <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 0.75, minWidth: 0 }}>
+      <Stack
+        direction="row"
+        spacing={0.5}
+        sx={{
+          alignItems: "center",
+          mt: 0.75,
+          minWidth: 0
+        }}>
         <Typography variant="body2" sx={{ fontSize: "0.78rem" }} noWrap>
           {from}
         </Typography>
@@ -57,8 +64,16 @@ export default function OrderCard({ order, draggable, highlighted = false, onDra
         {formatDateTime(order.createdAt)}
       </Typography>
 
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 1.25 }}>
-        <Stack direction="row" alignItems="center" spacing={0.5}>
+      <Stack
+        direction="row"
+        sx={{
+          justifyContent: "space-between",
+          alignItems: "center",
+          mt: 1.25
+        }}>
+        <Stack direction="row" spacing={0.5} sx={{
+          alignItems: "center"
+        }}>
           <Inventory2OutlinedIcon sx={{ fontSize: 14, color: "text.disabled" }} />
           <Typography variant="body2" sx={{ fontSize: "0.72rem", color: "text.secondary" }}>
             {order.itemCount} {order.itemCount === 1 ? "stavka" : "stavki"}

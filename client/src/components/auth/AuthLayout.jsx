@@ -21,7 +21,9 @@ export default function AuthLayout({ children, maxWidth = 400 }) {
           `,
         }}
       >
-        <Stack direction="row" alignItems="center" spacing={1.5}>
+        <Stack direction="row" spacing={1.5} sx={{
+          alignItems: "center"
+        }}>
           <Box sx={{ color: "sidebar.logo" }}>
             <Logo size={30} />
           </Box>
@@ -46,7 +48,14 @@ export default function AuthLayout({ children, maxWidth = 400 }) {
       <Box sx={{ display: "grid", placeItems: "center", p: 3, bgcolor: "background.default", position: "relative" }}>
         <ColorModeToggle sx={{ position: "absolute", top: 16, right: 16 }} />
         <Paper variant="outlined" sx={{ p: { xs: 3, sm: 4.5 }, width: "100%", maxWidth }}>
-          <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 3, display: { md: "none" } }}>
+          <Stack
+            direction="row"
+            spacing={1.5}
+            sx={{
+              alignItems: "center",
+              mb: 3,
+              display: { md: "none" }
+            }}>
             <Box sx={{ color: "primary.main" }}>
               <Logo size={26} />
             </Box>

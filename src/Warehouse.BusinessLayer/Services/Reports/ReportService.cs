@@ -41,7 +41,8 @@ public class ReportService : IReportService
         int CountOf(params OrderStatus[] statuses) =>
             statusCounts.Where(x => statuses.Contains(x.Status)).Sum(x => x.Count);
 
-        var belowMinimum = await stock.CountAsync(x => x.Quantity < (x.MinStockOverride ?? x.Product.MinStock), ct);
+        var belowMinimum = await stock.CountAsync(x => x.Product.IsActive && x.StorageLocation.IsActive
+            && x.Quantity < (x.MinStockOverride ?? x.Product.MinStock), ct);
 
         var completedThisMonth = await orders.CountAsync(x => x.CompletedAt >= monthStart, ct);
         var completedLastMonth = await orders.CountAsync(
@@ -51,9 +52,13 @@ public class ReportService : IReportService
             .Where(x => x.MovementType == MovementType.Outbound && x.CreatedAt >= monthStart)
             .SumAsync(x => (decimal?)(x.Quantity * x.Product.Price), ct) ?? 0m;
 
+        var elapsedThisMonth = now - monthStart;
+        var previousMonthSamePoint = previousMonthStart + elapsedThisMonth;
+        if (previousMonthSamePoint > monthStart) previousMonthSamePoint = monthStart;
+
         var issuedLastMonth = await movements
             .Where(x => x.MovementType == MovementType.Outbound
-                     && x.CreatedAt >= previousMonthStart && x.CreatedAt < monthStart)
+                     && x.CreatedAt >= previousMonthStart && x.CreatedAt < previousMonthSamePoint)
             .SumAsync(x => (decimal?)(x.Quantity * x.Product.Price), ct) ?? 0m;
 
         var kpi = new KpiDto(
@@ -89,9 +94,9 @@ public class ReportService : IReportService
             .ToList();
 
         var byCategory = await stock
-            .Select(x => new { Category = x.Product.Category.Name, Value = x.Quantity * x.Product.Price })
-            .GroupBy(x => x.Category)
-            .Select(g => new CategoryValueDto(g.Key, g.Sum(v => v.Value)))
+            .Select(x => new { x.Product.CategoryId, Category = x.Product.Category.Name, Value = x.Quantity * x.Product.Price })
+            .GroupBy(x => new { x.CategoryId, x.Category })
+            .Select(g => new CategoryValueDto(g.Key.CategoryId, g.Key.Category, g.Sum(v => v.Value)))
             .ToListAsync(ct);
 
         var topSince = now.AddDays(-TopIssuedDays);
@@ -107,12 +112,16 @@ public class ReportService : IReportService
         var topIssued = await ToTopProductsAsync(topRaw.Select(x => (x.ProductId, x.Quantity, x.Value)), ct);
 
         var lowStock = await stock
-            .Where(x => x.Quantity < (x.MinStockOverride ?? x.Product.MinStock))
+            .Where(x => x.Product.IsActive && x.StorageLocation.IsActive
+                     && x.Quantity < (x.MinStockOverride ?? x.Product.MinStock))
             .OrderBy(x => x.Quantity / (x.MinStockOverride ?? x.Product.MinStock))
             .Take(6)
             .Select(x => new LowStockDto(
                 x.Id,
+                x.ProductId,
+                x.Product.Sku,
                 x.Product.Name,
+                x.StorageLocationId,
                 x.StorageLocation.Code,
                 x.StorageLocation.Store != null ? x.StorageLocation.Store.Name : null,
                 x.Product.UnitOfMeasure,

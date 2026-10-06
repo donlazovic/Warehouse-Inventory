@@ -61,7 +61,7 @@ const timeAgo = (value) => {
   if (seconds < 60) return "upravo";
   if (seconds < 3600) return `pre ${Math.floor(seconds / 60)} min`;
   if (seconds < 86400) return `pre ${Math.floor(seconds / 3600)} h`;
-  return new Date(value).toLocaleDateString("sr-RS");
+  return new Date(value).toLocaleDateString("sr-Latn-RS");
 };
 
 export default function AppLayout() {
@@ -156,7 +156,14 @@ export default function AppLayout() {
           },
         }}
       >
-        <Stack direction="row" alignItems="center" spacing={1.5} sx={{ px: 2.5, py: 2.5 }}>
+        <Stack
+          direction="row"
+          spacing={1.5}
+          sx={{
+            alignItems: "center",
+            px: 2.5,
+            py: 2.5
+          }}>
           <Box sx={{ color: sidebar.logo }}>
             <Logo size={26} />
           </Box>
@@ -228,7 +235,14 @@ export default function AppLayout() {
 
         <Divider sx={{ borderColor: sidebar.border }} />
 
-        <Stack direction="row" alignItems="center" spacing={1.5} sx={{ px: 2.5, py: 2 }}>
+        <Stack
+          direction="row"
+          spacing={1.5}
+          sx={{
+            alignItems: "center",
+            px: 2.5,
+            py: 2
+          }}>
           <Avatar sx={{ width: 34, height: 34, bgcolor: "avatar.strong", color: "#FFFFFF", fontSize: "0.82rem", fontWeight: 600 }}>
             {initialsOf(user)}
           </Avatar>
@@ -251,7 +265,14 @@ export default function AppLayout() {
         >
           <Toolbar sx={{ justifyContent: "flex-end", gap: 0.5 }}>
             <Tooltip title={connection.hint}>
-              <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mr: 1.5, cursor: "default" }}>
+              <Stack
+                direction="row"
+                spacing={0.75}
+                sx={{
+                  alignItems: "center",
+                  mr: 1.5,
+                  cursor: "default"
+                }}>
                 <Box
                   sx={{
                     width: 8,
@@ -304,7 +325,14 @@ export default function AppLayout() {
         transformOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <Box sx={{ width: 360 }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ px: 2, py: 1.5 }}>
+          <Stack
+            direction="row"
+            sx={{
+              justifyContent: "space-between",
+              alignItems: "center",
+              px: 2,
+              py: 1.5
+            }}>
             <Typography variant="body2" sx={{ fontWeight: 600 }}>
               Obavestenja
             </Typography>
@@ -318,7 +346,12 @@ export default function AppLayout() {
 
           <Box sx={{ maxHeight: 420, overflowY: "auto" }}>
             {notifications.length === 0 ? (
-              <Typography variant="body2" color="text.secondary" sx={{ p: 2.5 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.secondary",
+                  p: 2.5
+                }}>
                 Nemate obavestenja. Ovde stizu zahtevi za odobrenje, promene statusa vasih naloga i
                 upozorenja o niskim zalihama.
               </Typography>
@@ -355,7 +388,12 @@ export default function AppLayout() {
                     <Typography variant="body2" sx={{ fontWeight: notification.isRead ? 400 : 600 }}>
                       {notification.title}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.78rem" }}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: "text.secondary",
+                        fontSize: "0.78rem"
+                      }}>
                       {notification.message}
                     </Typography>
                     <Typography variant="body2" sx={{ fontSize: "0.7rem", color: "text.disabled", mt: 0.25 }}>
@@ -380,7 +418,12 @@ export default function AppLayout() {
           <Typography variant="body2" sx={{ fontWeight: 500 }}>
             {user?.firstName} {user?.lastName}
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.78rem" }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              fontSize: "0.78rem"
+            }}>
             {user?.email}
           </Typography>
         </Box>

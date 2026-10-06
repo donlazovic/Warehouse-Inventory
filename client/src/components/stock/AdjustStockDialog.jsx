@@ -61,13 +61,17 @@ export default function AdjustStockDialog({ open, row, products, locations, onCl
           <Typography variant="body2" sx={{ fontWeight: 500 }}>
             {row.productName}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             {row.locationCode} — {row.locationName}
           </Typography>
         </Box>
       ) : (
         <>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             Koristite za pocetno stanje artikla na lokaciji ili za uskladjivanje posle popisa. Robu
             od dobavljaca unosite kroz ulazni nalog.
           </Typography>
@@ -88,7 +92,9 @@ export default function AdjustStockDialog({ open, row, products, locations, onCl
         </>
       )}
 
-      <Stack direction="row" spacing={2} alignItems="flex-start">
+      <Stack direction="row" spacing={2} sx={{
+        alignItems: "flex-start"
+      }}>
         {row && (
           <TextField
             label="Trenutno"

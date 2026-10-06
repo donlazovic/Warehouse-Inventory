@@ -14,7 +14,7 @@ public record KpiDto(
 
 public record DailyFlowDto(DateTime Date, decimal ReceivedValue, decimal TransferredValue, decimal IssuedValue);
 
-public record CategoryValueDto(string Category, decimal Value);
+public record CategoryValueDto(int CategoryId, string Category, decimal Value);
 
 public record StatusCountDto(OrderStatus Status, int Count);
 
@@ -28,7 +28,10 @@ public record TopProductDto(
 
 public record LowStockDto(
     int StockItemId,
+    int ProductId,
+    string ProductSku,
     string ProductName,
+    int StorageLocationId,
     string LocationCode,
     string? StoreName,
     UnitOfMeasure UnitOfMeasure,

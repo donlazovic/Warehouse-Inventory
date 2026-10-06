@@ -110,7 +110,9 @@ export default function IssueStockDialog({ open, preset, locations, onClose, onS
       onSubmit={handleSubmit}
       onClose={onClose}
     >
-      <Typography variant="body2" color="text.secondary">
+      <Typography variant="body2" sx={{
+        color: "text.secondary"
+      }}>
         Roba koja napusta sistem — prodaja u objektu, otpis zbog isteka roka, lom ili interna
         potrosnja. Za prenos izmedju lokacija koristite izlazni nalog.
       </Typography>
@@ -163,7 +165,13 @@ export default function IssueStockDialog({ open, preset, locations, onClose, onS
       />
 
       <Box>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+        <Stack
+          direction="row"
+          sx={{
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 1
+          }}>
           <Typography variant="h3">Stavke</Typography>
           <Button
             size="small"
@@ -176,7 +184,12 @@ export default function IssueStockDialog({ open, preset, locations, onClose, onS
         </Stack>
 
         {locationId === "" ? (
-          <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              py: 2
+            }}>
             Izaberite lokaciju da biste videli artikle koji su na stanju.
           </Typography>
         ) : (

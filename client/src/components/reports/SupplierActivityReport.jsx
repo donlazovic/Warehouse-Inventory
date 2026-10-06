@@ -132,7 +132,9 @@ export default function SupplierActivityReport() {
 
       {!report && !error && (
         <Paper variant="outlined" sx={{ p: 5, textAlign: "center" }}>
-          <Typography color="text.secondary">Izaberite dobavljaca da biste videli njegovu aktivnost.</Typography>
+          <Typography sx={{
+            color: "text.secondary"
+          }}>Izaberite dobavljaca da biste videli njegovu aktivnost.</Typography>
         </Paper>
       )}
 
@@ -159,7 +161,9 @@ export default function SupplierActivityReport() {
                 Vrednost nabavki po mesecima
               </Typography>
               {monthly.length === 0 ? (
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{
+                  color: "text.secondary"
+                }}>
                   Nema realizovanih naloga u periodu.
                 </Typography>
               ) : (

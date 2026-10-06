@@ -4,7 +4,13 @@ import { IconButton, Stack, Tooltip } from "@mui/material";
 
 export default function RowActions({ onEdit, onDelete }) {
   return (
-    <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+    <Stack
+      direction="row"
+      spacing={0.5}
+      sx={{
+        justifyContent: "flex-end",
+      }}
+    >
       {onEdit && (
         <Tooltip title="Izmeni">
           <IconButton

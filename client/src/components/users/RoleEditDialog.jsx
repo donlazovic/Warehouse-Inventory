@@ -72,7 +72,12 @@ export default function RoleEditDialog({ roleId, tree, onClose, onSaved }) {
       <DialogTitle component="div">
         <Typography variant="h2">{detail ? `Uloga: ${detail.role.name}` : "Uloga"}</Typography>
         {detail && (
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mt: 0.5
+            }}>
             {detail.role.userCount} {detail.role.userCount === 1 ? "korisnik" : "korisnika"} · {selected.size} od{" "}
             {totalLeaves} dozvola
           </Typography>
@@ -116,7 +121,9 @@ export default function RoleEditDialog({ roleId, tree, onClose, onSaved }) {
       </DialogContent>
 
       <DialogActions sx={{ px: 3, py: 2, justifyContent: "space-between" }}>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{
+          color: "text.secondary"
+        }}>
           {changed > 0 ? `${changed} ${changed === 1 ? "izmena" : "izmena"} nije sacuvano` : ""}
         </Typography>
         <Stack direction="row" spacing={1}>

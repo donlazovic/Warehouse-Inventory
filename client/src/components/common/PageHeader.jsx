@@ -4,15 +4,22 @@ export default function PageHeader({ title, description, actions }) {
   return (
     <Stack
       direction={{ xs: "column", sm: "row" }}
-      justifyContent="space-between"
-      alignItems={{ xs: "stretch", sm: "flex-start" }}
       spacing={2}
-      sx={{ mb: 3 }}
-    >
+      sx={{
+        justifyContent: "space-between",
+        alignItems: { xs: "stretch", sm: "flex-start" },
+        mb: 3
+      }}>
       <Box>
         <Typography variant="h1">{title}</Typography>
         {description && (
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, maxWidth: "62ch" }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mt: 0.5,
+              maxWidth: "62ch"
+            }}>
             {description}
           </Typography>
         )}

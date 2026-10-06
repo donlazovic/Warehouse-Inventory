@@ -33,6 +33,7 @@ import KanbanBoard from "../components/orders/KanbanBoard";
 import OrderDetailDialog from "../components/orders/OrderDetailDialog";
 import StatusChangeDialog from "../components/orders/StatusChangeDialog";
 import usePagedQuery from "../hooks/usePagedQuery";
+import useUrlFilterSync, { readUrlFilter } from "../hooks/useUrlFilter";
 import useRealtimeEvent from "../hooks/useRealtimeEvent";
 import { monoFont, statusColors } from "../theme";
 import {
@@ -48,6 +49,8 @@ const permissionForStatus = (status) => {
   return "orders.update";
 };
 
+const ORDER_URL_FILTER = { status: "number", orderType: "number" };
+
 export default function OrdersPage() {
   const { can } = useAuth();
   const toast = useToast();
@@ -55,7 +58,7 @@ export default function OrdersPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [view, setView] = useState("kanban");
+  const [view, setView] = useState(() => (searchParams.has("status") ? "list" : "kanban"));
   const [kanbanColumns, setKanbanColumns] = useState([]);
   const [kanbanLoading, setKanbanLoading] = useState(true);
   const [kanbanFilter, setKanbanFilter] = useState({});
@@ -71,7 +74,11 @@ export default function OrdersPage() {
   const [statusSubmitting, setStatusSubmitting] = useState(false);
 
   const fetcher = useCallback((params) => ordersApi.list(params), []);
-  const query = usePagedQuery(fetcher, {});
+  const query = usePagedQuery(fetcher, readUrlFilter(searchParams, ORDER_URL_FILTER));
+  useUrlFilterSync(ORDER_URL_FILTER, (filter) => {
+    setView("list");
+    query.patchFilter(filter);
+  });
 
   const loadKanban = useCallback(() => {
     setKanbanLoading(true);

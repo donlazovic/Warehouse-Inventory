@@ -58,25 +58,47 @@ function RolesPanel({ roles, onEdit }) {
     >
       {roles.map((role) => (
         <Paper key={role.id} variant="outlined" sx={{ p: 2.5, display: "flex", flexDirection: "column" }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+          <Stack
+            direction="row"
+            sx={{
+              justifyContent: "space-between",
+              alignItems: "flex-start"
+            }}>
             <Typography variant="h3">{role.name}</Typography>
             {role.isProtected && <Chip size="small" variant="outlined" label="Zakljucana" />}
           </Stack>
 
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1, flexGrow: 1, minHeight: 40 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mt: 1,
+              flexGrow: 1,
+              minHeight: 40
+            }}>
             {role.description ?? "Bez opisa"}
           </Typography>
 
           <Stack direction="row" spacing={3} sx={{ mt: 2, mb: 2 }}>
             <Box>
               <Typography sx={{ fontSize: "1.3rem", fontWeight: 600 }}>{role.permissionCount}</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.75rem" }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.secondary",
+                  fontSize: "0.75rem"
+                }}>
                 dozvola
               </Typography>
             </Box>
             <Box>
               <Typography sx={{ fontSize: "1.3rem", fontWeight: 600 }}>{role.userCount}</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.75rem" }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.secondary",
+                  fontSize: "0.75rem"
+                }}>
                 korisnika
               </Typography>
             </Box>
@@ -151,7 +173,9 @@ export default function UsersPage() {
       headerName: "Korisnik",
       sortable: true,
       render: (row) => (
-        <Stack direction="row" spacing={1.5} alignItems="center">
+        <Stack direction="row" spacing={1.5} sx={{
+          alignItems: "center"
+        }}>
           <Avatar sx={{ width: 30, height: 30, fontSize: "0.72rem", fontWeight: 600, bgcolor: "avatar.bg", color: "avatar.fg" }}>
             {`${row.firstName[0] ?? ""}${row.lastName[0] ?? ""}`.toUpperCase()}
           </Avatar>
@@ -164,7 +188,12 @@ export default function UsersPage() {
                 </Typography>
               )}
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.78rem" }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "text.secondary",
+                fontSize: "0.78rem"
+              }}>
               {row.email}
             </Typography>
           </Box>
@@ -200,7 +229,9 @@ export default function UsersPage() {
 
         if (row.isPendingApproval) {
           return (
-            <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+            <Stack direction="row" spacing={0.5} sx={{
+              justifyContent: "flex-end"
+            }}>
               {can("users.update") && (
                 <Button size="small" variant="contained" startIcon={<CheckIcon />} onClick={() => setApproving(row)}>
                   Odobri
@@ -219,11 +250,15 @@ export default function UsersPage() {
 
         if (locked && !isSelf) {
           return row.isOwner ? (
-            <Stack direction="row" justifyContent="flex-end">
+            <Stack direction="row" sx={{
+              justifyContent: "flex-end"
+            }}>
               <Chip size="small" variant="outlined" color="primary" label="Vlasnik" />
             </Stack>
           ) : (
-            <Stack direction="row" justifyContent="flex-end">
+            <Stack direction="row" sx={{
+              justifyContent: "flex-end"
+            }}>
               <Tooltip title="Samo vlasnik sistema moze menjati administratore">
                 <Chip size="small" variant="outlined" label="Zakljucan" />
               </Tooltip>
@@ -232,7 +267,13 @@ export default function UsersPage() {
         }
 
         return (
-          <Stack direction="row" spacing={0.5} justifyContent="flex-end" alignItems="center">
+          <Stack
+            direction="row"
+            spacing={0.5}
+            sx={{
+              justifyContent: "flex-end",
+              alignItems: "center"
+            }}>
             {row.isOwner && <Chip size="small" variant="outlined" color="primary" label="Vlasnik" />}
             {can("users.update") && !isSelf && (
               <Tooltip title="Nova lozinka">
@@ -312,7 +353,9 @@ export default function UsersPage() {
           )}
 
           <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-            <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ md: "center" }}>
+            <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{
+              alignItems: { md: "center" }
+            }}>
               <TextField
                 label="Pretraga po imenu ili email-u"
                 value={query.filter.search ?? ""}

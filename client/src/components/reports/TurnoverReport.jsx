@@ -85,7 +85,7 @@ export default function TurnoverReport({ locations, categories }) {
       align: "right",
       render: (row) => (
         <Box component="span" sx={{ fontFamily: monoFont, fontSize: "0.82rem", fontWeight: 600 }}>
-          {row.closing.toLocaleString("sr-RS", { maximumFractionDigits: 3 })}
+          {row.closing.toLocaleString("sr-Latn-RS", { maximumFractionDigits: 3 })}
         </Box>
       ),
     },
@@ -120,7 +120,13 @@ export default function TurnoverReport({ locations, categories }) {
 
           <ReportTable columns={columns} rows={report.rows} rowKey={(row) => row.productId} />
 
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5, maxWidth: "80ch" }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mt: 1.5,
+              maxWidth: "80ch"
+            }}>
             Zavrsno = pocetno + ulaz {byLocation ? "+ prenos u lokaciju − prenos iz lokacije " : ""}− izlaz ± korekcija.
             {!byLocation &&
               " Za ceo lanac prenosi se ne prikazuju jer roba samo menja mesto unutar lanca — ukupna kolicina ostaje ista."}

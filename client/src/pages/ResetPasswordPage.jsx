@@ -77,12 +77,16 @@ export default function ResetPasswordPage() {
       )}
 
       {status === "invalid" && (
-        <Stack spacing={2.5} alignItems="flex-start">
+        <Stack spacing={2.5} sx={{
+          alignItems: "flex-start"
+        }}>
           <Box sx={{ color: "warning.main" }}>
             <LinkOffOutlinedIcon sx={{ fontSize: 40 }} />
           </Box>
           <Typography variant="h2">Link vise ne vazi</Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             Link za promenu lozinke je istekao, vec je iskoriscen, ili je zamenjen novijim zahtevom.
             Zatrazite novi — stize za nekoliko sekundi.
           </Typography>
@@ -102,7 +106,12 @@ export default function ResetPasswordPage() {
           <Typography variant="h2" gutterBottom>
             Nova lozinka
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mb: 3
+            }}>
             {maskedEmail ? `Postavljate novu lozinku za nalog ${maskedEmail}.` : "Postavite novu lozinku."} Posle
             promene bicete odjavljeni sa svih uredjaja.
           </Typography>

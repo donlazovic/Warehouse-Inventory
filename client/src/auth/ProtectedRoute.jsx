@@ -24,7 +24,9 @@ export default function ProtectedRoute({ permission, children }) {
         <Typography variant="h2" gutterBottom>
           Nemate pristup ovoj stranici
         </Typography>
-        <Typography color="text.secondary">
+        <Typography sx={{
+          color: "text.secondary"
+        }}>
           Vasa uloga ({user.role}) ne obuhvata potrebnu dozvolu. Obratite se administratoru
           ako vam je pristup potreban.
         </Typography>

@@ -33,16 +33,22 @@ export default function ForgotPasswordPage() {
   return (
     <AuthLayout>
       {sent ? (
-        <Stack spacing={2.5} alignItems="flex-start">
+        <Stack spacing={2.5} sx={{
+          alignItems: "flex-start"
+        }}>
           <Box sx={{ color: "primary.main" }}>
             <MarkEmailReadOutlinedIcon sx={{ fontSize: 40 }} />
           </Box>
           <Typography variant="h2">Proverite inbox</Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             Ako nalog sa adresom <strong>{email.trim()}</strong> postoji, poslali smo link za promenu
             lozinke. Link vazi 30 minuta i moze se iskoristiti samo jednom.
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             Ne vidite mejl? Proverite folder za nezeljenu postu, ili posaljite zahtev ponovo za minut.
           </Typography>
           <Stack direction="row" spacing={1}>
@@ -57,7 +63,12 @@ export default function ForgotPasswordPage() {
           <Typography variant="h2" gutterBottom>
             Zaboravljena lozinka
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mb: 3
+            }}>
             Unesite email svog naloga i poslacemo vam link za postavljanje nove lozinke.
           </Typography>
 
@@ -78,7 +89,12 @@ export default function ForgotPasswordPage() {
               {submitting ? "Slanje..." : "Posalji link"}
             </Button>
 
-            <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center" }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "text.secondary",
+                textAlign: "center"
+              }}>
               Setili ste se?{" "}
               <Link component={RouterLink} to="/prijava" underline="hover">
                 Prijavite se

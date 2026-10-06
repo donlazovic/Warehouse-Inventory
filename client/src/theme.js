@@ -154,6 +154,13 @@ export function createAppTheme(mode = "light") {
     },
     shape: { borderRadius: 6 },
     components: {
+      MuiCssBaseline: {
+        styleOverrides: {
+          ".recharts-wrapper:focus, .recharts-surface:focus, .recharts-sector:focus, .recharts-layer:focus": {
+            outline: "none",
+          },
+        },
+      },
       MuiButton: {
         defaultProps: { disableElevation: true },
         styleOverrides: { root: { paddingInline: 16 } },

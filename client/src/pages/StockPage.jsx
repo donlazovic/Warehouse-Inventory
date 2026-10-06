@@ -20,7 +20,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { categoriesApi, exportParams, exportsApi, locationsApi, productsApi, stockApi } from "../api/endpoints";
 import { useAuth } from "../auth/AuthContext";
 import DataTable from "../components/common/DataTable";
@@ -32,6 +32,7 @@ import IssueStockDialog from "../components/stock/IssueStockDialog";
 import ReconciliationDialog from "../components/stock/ReconciliationDialog";
 import StockLimitsDialog from "../components/stock/StockLimitsDialog";
 import usePagedQuery from "../hooks/usePagedQuery";
+import useUrlFilterSync, { readUrlFilter } from "../hooks/useUrlFilter";
 import useRealtimeEvent from "../hooks/useRealtimeEvent";
 import { monoFont } from "../theme";
 import { formatDateTime, formatQuantity, locationTypeLabels, unitLabels } from "../utils/format";
@@ -40,6 +41,14 @@ const suggestReplenishment = (row) => {
   const target = row.effectiveMaxStock > 0 ? row.effectiveMaxStock : row.effectiveMinStock * 2;
   const missing = Math.round((target - row.quantity) * 1000) / 1000;
   return missing > 0 ? missing : row.effectiveMinStock || 1;
+};
+
+const STOCK_URL_FILTER = {
+  search: "string",
+  storageLocationId: "number",
+  categoryId: "number",
+  locationType: "number",
+  onlyBelowMinimum: "bool",
 };
 
 export default function StockPage() {
@@ -59,7 +68,9 @@ export default function StockPage() {
   const [reconcileOpen, setReconcileOpen] = useState(false);
 
   const fetcher = useCallback((params) => stockApi.list(params), []);
-  const query = usePagedQuery(fetcher, { sortBy: "name" });
+  const [searchParams] = useSearchParams();
+  const query = usePagedQuery(fetcher, { sortBy: "name", ...readUrlFilter(searchParams, STOCK_URL_FILTER) });
+  useUrlFilterSync(STOCK_URL_FILTER, query.patchFilter);
 
   useEffect(() => {
     locationsApi.lookup().then(setLocations).catch(() => {});
@@ -109,10 +120,17 @@ export default function StockPage() {
       headerName: "Lokacija",
       sortable: true,
       render: (row) => (
-        <Stack direction="row" spacing={1} alignItems="center">
+        <Stack direction="row" spacing={1} sx={{
+          alignItems: "center"
+        }}>
           <Box>
             <Typography sx={{ fontFamily: monoFont, fontSize: "0.78rem" }}>{row.locationCode}</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.75rem" }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "text.secondary",
+                fontSize: "0.75rem"
+              }}>
               {row.storeName ?? locationTypeLabels[row.locationType]}
             </Typography>
           </Box>
@@ -178,7 +196,9 @@ export default function StockPage() {
       headerName: "",
       align: "right",
       render: (row) => (
-        <Stack direction="row" spacing={0.25} justifyContent="flex-end">
+        <Stack direction="row" spacing={0.25} sx={{
+          justifyContent: "flex-end"
+        }}>
           {can("orders.create") && row.locationType === 2 && row.isBelowMinimum && (
             <Button size="small" startIcon={<LocalShippingOutlinedIcon />} onClick={() => replenish(row)}>
               Dopuni
@@ -268,7 +288,9 @@ export default function StockPage() {
       />
 
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-        <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ md: "center" }}>
+        <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{
+          alignItems: { md: "center" }
+        }}>
           <TextField
             label="Pretraga po nazivu ili SKU"
             value={query.filter.search ?? ""}
@@ -344,7 +366,12 @@ export default function StockPage() {
         emptyHint="Roba se pojavljuje ovde kad se realizuje prvi ulazni nalog ili upise pocetno stanje."
       />
 
-      <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+      <Typography
+        variant="body2"
+        sx={{
+          color: "text.secondary",
+          mt: 2
+        }}>
         Zvezdica pored granica znaci da su podesene posebno za tu lokaciju.
       </Typography>
 

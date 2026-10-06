@@ -45,12 +45,12 @@ export const issueReasonLabels = {
 
 export const locationTypeLabels = { 1: "Centralni magacin", 2: "Prodajni objekat" };
 
-const numberFormat = new Intl.NumberFormat("sr-RS", {
+const numberFormat = new Intl.NumberFormat("sr-Latn-RS", {
   minimumFractionDigits: 0,
   maximumFractionDigits: 3,
 });
 
-const currencyFormat = new Intl.NumberFormat("sr-RS", {
+const currencyFormat = new Intl.NumberFormat("sr-Latn-RS", {
   style: "currency",
   currency: "RSD",
   maximumFractionDigits: 2,
@@ -60,11 +60,11 @@ export const formatQuantity = (value) => numberFormat.format(value ?? 0);
 export const formatMoney = (value) => currencyFormat.format(value ?? 0);
 
 export const formatDate = (value) =>
-  value ? new Date(value).toLocaleDateString("sr-RS") : "—";
+  value ? new Date(value).toLocaleDateString("sr-Latn-RS") : "—";
 
 export const formatDateTime = (value) =>
   value
-    ? new Date(value).toLocaleString("sr-RS", {
+    ? new Date(value).toLocaleString("sr-Latn-RS", {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
@@ -79,7 +79,7 @@ export const startOfDayIso = (dateString) =>
 export const endOfDayIso = (dateString) =>
   dateString ? new Date(`${dateString}T23:59:59.999`).toISOString() : null;
 
-const compactFormat = new Intl.NumberFormat("sr-RS", { notation: "compact", maximumFractionDigits: 1 });
+const compactFormat = new Intl.NumberFormat("sr-Latn-RS", { notation: "compact", maximumFractionDigits: 1 });
 
 export const formatCompact = (value) => compactFormat.format(value ?? 0);
 
