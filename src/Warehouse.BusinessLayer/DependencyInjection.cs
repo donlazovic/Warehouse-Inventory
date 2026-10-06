@@ -4,6 +4,7 @@ using QuestPDF.Infrastructure;
 using Warehouse.BusinessLayer.Realtime;
 using Warehouse.BusinessLayer.Services.Auth;
 using Warehouse.BusinessLayer.Services.Catalog;
+using Warehouse.BusinessLayer.Services.Email;
 using Warehouse.BusinessLayer.Services.Export;
 using Warehouse.BusinessLayer.Services.Identity;
 using Warehouse.BusinessLayer.Services.Inventory;
@@ -23,9 +24,13 @@ public static class DependencyInjection
 
         services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
         services.Configure<CompanySettings>(configuration.GetSection(CompanySettings.SectionName));
+        services.Configure<EmailSettings>(configuration.GetSection(EmailSettings.SectionName));
+        services.Configure<ClientSettings>(configuration.GetSection(ClientSettings.SectionName));
 
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IPasswordResetService, PasswordResetService>();
+        services.AddScoped<IEmailSender, SmtpEmailSender>();
 
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IRoleService, RoleService>();

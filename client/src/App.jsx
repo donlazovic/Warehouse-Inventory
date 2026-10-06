@@ -5,6 +5,7 @@ import { ToastProvider } from "./components/common/Toast";
 import AppLayout from "./components/layout/AppLayout";
 import CategoriesPage from "./pages/CategoriesPage";
 import DashboardPage from "./pages/DashboardPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import LocationsPage from "./pages/LocationsPage";
 import MovementsPage from "./pages/MovementsPage";
 import LoginPage from "./pages/LoginPage";
@@ -14,6 +15,7 @@ import PartnersPage from "./pages/PartnersPage";
 import ProductsPage from "./pages/ProductsPage";
 import RegisterPage from "./pages/RegisterPage";
 import ReportsPage from "./pages/ReportsPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import StockPage from "./pages/StockPage";
 import UsersPage from "./pages/UsersPage";
 import { RealtimeProvider } from "./realtime/RealtimeProvider";
@@ -33,6 +35,8 @@ export default function App() {
             <Routes>
               <Route path="/prijava" element={<LoginPage />} />
               <Route path="/registracija" element={<RegisterPage />} />
+              <Route path="/zaboravljena-lozinka" element={<ForgotPasswordPage />} />
+              <Route path="/reset-lozinke" element={<ResetPasswordPage />} />
 
               <Route
                 element={

@@ -7,6 +7,9 @@ export const authApi = {
   login: (payload) => unwrap(api.post("/api/auth/login", payload)),
   logout: (refreshToken) => unwrap(api.post("/api/auth/logout", { refreshToken })),
   me: () => unwrap(api.get("/api/auth/me")),
+  forgotPassword: (email) => unwrap(api.post("/api/auth/forgot-password", { email })),
+  checkResetToken: (token) => unwrap(api.get("/api/auth/reset-password/check", { params: { token } })),
+  resetPassword: (token, newPassword) => unwrap(api.post("/api/auth/reset-password", { token, newPassword })),
 };
 
 const crud = (resource) => ({

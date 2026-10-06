@@ -27,7 +27,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(Boolean(remembered));
   const [error, setError] = useState(null);
-  const [hint, setHint] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   if (user) {
@@ -64,17 +63,15 @@ export default function LoginPage() {
         </Typography>
 
         <Stack spacing={2.5}>
+          {location.state?.passwordReset && !error && (
+            <Alert severity="success">Lozinka je promenjena. Prijavite se novom lozinkom.</Alert>
+          )}
           {location.state?.registered && !error && (
             <Alert severity="success">
               Zahtev za nalog je poslat. Moci cete da se prijavite kada ga administrator odobri.
             </Alert>
           )}
           {error && <Alert severity="error">{error}</Alert>}
-          {hint && (
-            <Alert severity="info" onClose={() => setHint(false)}>
-              Lozinku resetuje administrator sistema. Obratite mu se sa svojom email adresom.
-            </Alert>
-          )}
 
           <TextField
             label="Email"
@@ -101,7 +98,7 @@ export default function LoginPage() {
               }
               label={<Typography variant="body2">Zapamti me</Typography>}
             />
-            <Link component="button" type="button" variant="body2" underline="hover" onClick={() => setHint(true)}>
+            <Link component={RouterLink} to="/zaboravljena-lozinka" variant="body2" underline="hover">
               Zaboravljena lozinka?
             </Link>
           </Stack>
