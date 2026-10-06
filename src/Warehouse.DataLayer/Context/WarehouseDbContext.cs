@@ -69,7 +69,7 @@ public class WarehouseDbContext : DbContext
 
         foreach (var entry in ChangeTracker.Entries<BaseEntity>())
         {
-            if (entry.State == EntityState.Added)
+            if (entry.State == EntityState.Added && entry.Entity.CreatedAt == default)
                 entry.Entity.CreatedAt = now;
             else if (entry.State == EntityState.Modified)
                 entry.Entity.UpdatedAt = now;

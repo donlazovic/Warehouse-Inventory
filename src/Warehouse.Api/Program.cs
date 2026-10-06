@@ -8,6 +8,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Threading.RateLimiting;
 using Warehouse.Api.Authorization;
+using Warehouse.Api.DemoData;
 using Warehouse.Api.Extensions;
 using Warehouse.Api.Realtime;
 using Warehouse.BusinessLayer;
@@ -124,6 +125,12 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
+
+if (args.Contains("--reset-data") || args.Contains("--seed-demo"))
+{
+    await DemoDataCommand.RunAsync(app, seed: args.Contains("--seed-demo"));
+    return;
+}
 
 if (app.Environment.IsDevelopment())
 {
