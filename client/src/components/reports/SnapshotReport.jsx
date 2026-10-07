@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { exportsApi, reportsApi } from "../../api/endpoints";
 import { useAuth } from "../../auth/AuthContext";
 import ExportMenu from "../common/ExportMenu";
+import ClearFiltersButton from "../common/ClearFiltersButton";
 import { monoFont } from "../../theme";
 import { endOfDayIso, formatMoney, toDateInput, unitLabels } from "../../utils/format";
 import ReportTable from "../common/ReportTable";
@@ -12,7 +13,9 @@ import { CategorySelect, cleanParams, DateField, FilterBar, LocationSelect } fro
 
 export default function SnapshotReport({ locations, categories }) {
   const { can } = useAuth();
-  const [filter, setFilter] = useState({ at: toDateInput(new Date()), locationId: "", categoryId: "" });
+  const defaults = () => ({ at: toDateInput(new Date()), locationId: "", categoryId: "" });
+  const [filter, setFilter] = useState(defaults);
+  const changed = JSON.stringify(filter) !== JSON.stringify(defaults());
   const [report, setReport] = useState(null);
   const [error, setError] = useState(null);
 
@@ -102,7 +105,7 @@ export default function SnapshotReport({ locations, categories }) {
         <DateField label="Stanje na dan" value={filter.at} onChange={set("at")} />
         <LocationSelect locations={locations} value={filter.locationId} onChange={set("locationId")} />
         <CategorySelect categories={categories} value={filter.categoryId} onChange={set("categoryId")} />
-        <Box sx={{ flexGrow: 1 }} />
+        <ClearFiltersButton active={changed} onClick={() => setFilter(defaults())} />
         {can("reports.export") && (
           <ExportMenu
             fileName={`stanje-${filter.at}`}

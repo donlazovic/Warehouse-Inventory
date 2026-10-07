@@ -18,3 +18,7 @@ public record CurrentUserDto(
     string Role,
     IReadOnlyList<string> Permissions,
     bool IsOwner);
+
+public record UpdateProfileRequest(string FirstName, string LastName);
+
+public record ChangePasswordRequest(string CurrentPassword, string NewPassword);

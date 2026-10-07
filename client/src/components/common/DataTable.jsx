@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from "react";
 import useFitHeight from "../../hooks/useFitHeight";
 import {
   Box,
@@ -31,6 +32,13 @@ export default function DataTable({
   emptyHint,
 }) {
   const [fitRef, fitHeight] = useFitHeight({ reserve: 88 });
+  const headRef = useRef(null);
+  const [headHeight, setHeadHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    const height = headRef.current?.offsetHeight ?? 0;
+    if (height !== headHeight) setHeadHeight(height);
+  });
 
   const handleSort = (field) => {
     if (!onSortChange) return;
@@ -38,8 +46,8 @@ export default function DataTable({
   };
 
   return (
-    <Paper variant="outlined">
-      <TableContainer ref={fitRef} sx={{ position: "relative", maxHeight: fitHeight ?? undefined }}>
+    <Paper variant="outlined" sx={{ overflow: "hidden" }}>
+      <TableContainer ref={fitRef} sx={{ position: "relative", maxHeight: fitHeight ?? undefined, "&::-webkit-scrollbar-track": { marginTop: `${headHeight}px` } }}>
         {loading && (
           <Box
             sx={{
@@ -56,7 +64,7 @@ export default function DataTable({
         )}
 
         <Table size="small" stickyHeader>
-          <TableHead>
+          <TableHead ref={headRef}>
             <TableRow>
               {columns.map((column) => (
                 <TableCell

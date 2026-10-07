@@ -3,6 +3,7 @@ import { Alert, Box, Chip, MenuItem, Paper, Stack, TextField, Typography } from 
 import { useCallback, useEffect, useState } from "react";
 import { exportParams, exportsApi, locationsApi, stockApi } from "../api/endpoints";
 import { useAuth } from "../auth/AuthContext";
+import ClearFiltersButton from "../components/common/ClearFiltersButton";
 import DataTable from "../components/common/DataTable";
 import ExportMenu from "../components/common/ExportMenu";
 import PageHeader from "../components/common/PageHeader";
@@ -243,6 +244,13 @@ export default function MovementsPage() {
             value={range.to}
             onChange={setDate("to")}
             slotProps={{ inputLabel: { shrink: true } }}
+          />
+          <ClearFiltersButton
+            active={query.hasActiveFilters || Boolean(range.from || range.to)}
+            onClick={() => {
+              query.resetFilters();
+              setRange({ from: "", to: "" });
+            }}
           />
         </Stack>
       </Paper>

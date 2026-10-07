@@ -16,6 +16,7 @@ import ProductsPage from "./pages/ProductsPage";
 import RegisterPage from "./pages/RegisterPage";
 import ReportsPage from "./pages/ReportsPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import SettingsPage from "./pages/SettingsPage";
 import StockPage from "./pages/StockPage";
 import UsersPage from "./pages/UsersPage";
 import { RealtimeProvider } from "./realtime/RealtimeProvider";
@@ -56,6 +57,7 @@ export default function App() {
                 <Route path="/dobavljaci" element={guarded("suppliers.view", <PartnersPage kind="supplier" />)} />
                 <Route path="/objekti" element={guarded("stores.view", <PartnersPage kind="store" />)} />
                 <Route path="/korisnici" element={guarded("users.view", <UsersPage />)} />
+                <Route path="/podesavanja" element={<SettingsPage />} />
                 <Route path="*" element={<NotFoundPage />} />
               </Route>
             </Routes>

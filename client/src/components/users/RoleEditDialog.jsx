@@ -6,11 +6,11 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
-  DialogTitle,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
+import DialogHeader from "../common/DialogHeader";
 import { useEffect, useMemo, useState } from "react";
 import { rolesApi } from "../../api/endpoints";
 import PermissionTree from "./PermissionTree";
@@ -69,20 +69,16 @@ export default function RoleEditDialog({ roleId, tree, onClose, onSaved }) {
 
   return (
     <Dialog open={Boolean(roleId)} onClose={saving ? undefined : onClose} maxWidth="md" fullWidth>
-      <DialogTitle component="div">
-        <Typography variant="h2">{detail ? `Uloga: ${detail.role.name}` : "Uloga"}</Typography>
-        {detail && (
-          <Typography
-            variant="body2"
-            sx={{
-              color: "text.secondary",
-              mt: 0.5
-            }}>
-            {detail.role.userCount} {detail.role.userCount === 1 ? "korisnik" : "korisnika"} · {selected.size} od{" "}
-            {totalLeaves} dozvola
-          </Typography>
-        )}
-      </DialogTitle>
+      <DialogHeader
+        title={detail ? `Uloga: ${detail.role.name}` : "Uloga"}
+        subtitle={
+          detail
+            ? `${detail.role.userCount} ${detail.role.userCount === 1 ? "korisnik" : "korisnika"} · ${selected.size} od ${totalLeaves} dozvola`
+            : null
+        }
+        onClose={onClose}
+        disabled={saving}
+      />
 
       <DialogContent dividers>
         {!detail && !error && (

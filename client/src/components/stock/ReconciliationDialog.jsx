@@ -7,7 +7,6 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
-  DialogTitle,
   Stack,
   Table,
   TableBody,
@@ -16,6 +15,7 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
+import DialogHeader from "../common/DialogHeader";
 import { useEffect, useState } from "react";
 import { stockApi } from "../../api/endpoints";
 import { monoFont } from "../../theme";
@@ -42,7 +42,7 @@ export default function ReconciliationDialog({ open, onClose }) {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Provera uskladjenosti zaliha</DialogTitle>
+      <DialogHeader title="Provera uskladjenosti zaliha" onClose={onClose} />
 
       <DialogContent dividers>
         <Typography

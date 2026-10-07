@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { categoriesApi } from "../api/endpoints";
 import { useAuth } from "../auth/AuthContext";
 import ConfirmDialog from "../components/common/ConfirmDialog";
+import ClearFiltersButton from "../components/common/ClearFiltersButton";
 import DataTable from "../components/common/DataTable";
 import PageHeader from "../components/common/PageHeader";
 import RowActions from "../components/common/RowActions";
@@ -100,6 +101,7 @@ export default function CategoriesPage() {
             <MenuItem value="true">Aktivne</MenuItem>
             <MenuItem value="false">Neaktivne</MenuItem>
           </TextField>
+          <ClearFiltersButton active={query.hasActiveFilters} onClick={query.resetFilters} />
         </Stack>
       </Paper>
 

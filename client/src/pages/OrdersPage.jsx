@@ -24,6 +24,7 @@ import {
   suppliersApi,
 } from "../api/endpoints";
 import { useAuth } from "../auth/AuthContext";
+import ClearFiltersButton from "../components/common/ClearFiltersButton";
 import DataTable from "../components/common/DataTable";
 import ExportMenu from "../components/common/ExportMenu";
 import PageHeader from "../components/common/PageHeader";
@@ -32,7 +33,7 @@ import OrderFormDialog from "../components/forms/OrderFormDialog";
 import KanbanBoard from "../components/orders/KanbanBoard";
 import OrderDetailDialog from "../components/orders/OrderDetailDialog";
 import StatusChangeDialog from "../components/orders/StatusChangeDialog";
-import usePagedQuery from "../hooks/usePagedQuery";
+import usePagedQuery, { isFilterValueActive } from "../hooks/usePagedQuery";
 import useUrlFilterSync, { readUrlFilter } from "../hooks/useUrlFilter";
 import useRealtimeEvent from "../hooks/useRealtimeEvent";
 import { monoFont, statusColors } from "../theme";
@@ -290,6 +291,14 @@ export default function OrdersPage() {
           ))}
         </TextField>
       )}
+      <ClearFiltersButton
+        active={
+          view === "kanban"
+            ? Object.values(kanbanFilter).some(isFilterValueActive)
+            : query.hasActiveFilters
+        }
+        onClick={() => (view === "kanban" ? setKanbanFilter({}) : query.resetFilters())}
+      />
     </Stack>
   );
 
@@ -361,6 +370,10 @@ export default function OrdersPage() {
             canMove={can("orders.update")}
             canMoveTo={(status) => can(permissionForStatus(status))}
             highlighted={highlighted}
+            onShowAll={(status) => {
+              setView("list");
+              query.patchFilter({ status });
+            }}
             onMove={(order, status) => setStatusRequest({ order, status })}
             onOpen={openDetail}
           />

@@ -30,6 +30,7 @@ const tokens = {
       preview: "#E9ECEE",
       tableLine: "#E7EBED",
     },
+    scrollbar: { thumb: "#C6CDD2", thumbHover: "#9AA4AB" },
     tint: {
       success: "#EDF4F1",
       warning: "#FAF0E9",
@@ -91,6 +92,7 @@ const tokens = {
       preview: "#0A100E",
       tableLine: "#22302A",
     },
+    scrollbar: { thumb: "#2E3F38", thumbHover: "#45594F" },
     tint: {
       success: "rgba(78,168,138,0.14)",
       warning: "rgba(224,138,79,0.14)",
@@ -159,6 +161,28 @@ export function createAppTheme(mode = "light") {
           ".recharts-wrapper:focus, .recharts-surface:focus, .recharts-sector:focus, .recharts-layer:focus": {
             outline: "none",
           },
+          "@supports not selector(::-webkit-scrollbar)": {
+            "*": {
+              scrollbarWidth: "thin",
+              scrollbarColor: `${t.scrollbar.thumb} transparent`,
+            },
+          },
+          "input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, input:-webkit-autofill:active": {
+            WebkitBoxShadow: `0 0 0 100px ${t.background.paper} inset`,
+            WebkitTextFillColor: t.text.primary,
+            caretColor: t.text.primary,
+            transition: "background-color 600000s ease-out 0s",
+          },
+          "*::-webkit-scrollbar": { width: 8, height: 8 },
+          "*::-webkit-scrollbar-track": { background: "transparent" },
+          "*::-webkit-scrollbar-corner": { background: "transparent" },
+          "*::-webkit-scrollbar-thumb": {
+            backgroundColor: t.scrollbar.thumb,
+            borderRadius: 8,
+            border: "2px solid transparent",
+            backgroundClip: "content-box",
+          },
+          "*::-webkit-scrollbar-thumb:hover": { backgroundColor: t.scrollbar.thumbHover },
         },
       },
       MuiButton: {
@@ -181,6 +205,35 @@ export function createAppTheme(mode = "light") {
         styleOverrides: {
           root: {
             "&.MuiTableRow-hover:hover": { backgroundColor: alpha(t.primary.main, mode === "dark" ? 0.06 : 0.03) },
+          },
+        },
+      },
+      MuiTablePagination: {
+        styleOverrides: {
+          root: { backgroundColor: t.surface.muted, borderTop: `1px solid ${t.divider}` },
+        },
+      },
+      MuiDialogTitle: {
+        styleOverrides: {
+          root: {
+            backgroundColor: t.surface.muted,
+            borderBottom: `1px solid ${t.divider}`,
+            padding: "14px 14px 14px 24px",
+          },
+        },
+      },
+      MuiDialogContent: {
+        styleOverrides: {
+          root: { ".MuiDialogTitle-root + &": { paddingTop: 20 } },
+          dividers: { borderTop: 0, borderBottom: 0 },
+        },
+      },
+      MuiDialogActions: {
+        styleOverrides: {
+          root: {
+            backgroundColor: t.surface.muted,
+            borderTop: `1px solid ${t.divider}`,
+            padding: "12px 24px",
           },
         },
       },

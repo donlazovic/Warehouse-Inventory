@@ -4,8 +4,8 @@ import {
   DialogActions,
   DialogContent,
   DialogContentText,
-  DialogTitle,
 } from "@mui/material";
+import DialogHeader from "./DialogHeader";
 
 export default function ConfirmDialog({
   open,
@@ -20,7 +20,7 @@ export default function ConfirmDialog({
 }) {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>{title}</DialogTitle>
+      <DialogHeader title={title} onClose={onClose} disabled={loading} />
       <DialogContent>
         <DialogContentText>{message}</DialogContentText>
       </DialogContent>

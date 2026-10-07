@@ -40,5 +40,16 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<CurrentUserDto>> Me(CancellationToken ct)
         => Ok(await _authService.GetCurrentUserAsync(User.GetUserId(), ct));
 
+    [HttpPut("profile")]
+    [Authorize]
+    public async Task<ActionResult<CurrentUserDto>> UpdateProfile(UpdateProfileRequest request, CancellationToken ct)
+        => Ok(await _authService.UpdateProfileAsync(User.GetUserId(), request, ct));
+
+    [HttpPost("change-password")]
+    [Authorize]
+    [EnableRateLimiting("auth")]
+    public async Task<ActionResult<AuthResponse>> ChangePassword(ChangePasswordRequest request, CancellationToken ct)
+        => Ok(await _authService.ChangePasswordAsync(User.GetUserId(), request, GetIp(), ct));
+
     private string? GetIp() => HttpContext.Connection.RemoteIpAddress?.ToString();
 }

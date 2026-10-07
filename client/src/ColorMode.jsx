@@ -36,13 +36,23 @@ export function ColorModeProvider({ children }) {
   const value = useMemo(
     () => ({
       mode,
+      preference: stored ?? "system",
       toggle: () => {
         const next = mode === "dark" ? "light" : "dark";
         localStorage.setItem(STORAGE_KEY, next);
         setStored(next);
       },
+      setPreference: (preference) => {
+        if (preference === "system") {
+          localStorage.removeItem(STORAGE_KEY);
+          setStored(null);
+        } else {
+          localStorage.setItem(STORAGE_KEY, preference);
+          setStored(preference);
+        }
+      },
     }),
-    [mode]
+    [mode, stored]
   );
 
   const theme = useMemo(() => createAppTheme(mode), [mode]);

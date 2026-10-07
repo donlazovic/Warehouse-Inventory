@@ -4,9 +4,9 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
-  DialogTitle,
   Stack,
 } from "@mui/material";
+import DialogHeader from "./DialogHeader";
 
 export default function FormDialog({
   open,
@@ -22,7 +22,7 @@ export default function FormDialog({
   return (
     <Dialog open={open} onClose={submitting ? undefined : onClose} maxWidth={maxWidth} fullWidth>
       <form onSubmit={onSubmit}>
-        <DialogTitle>{title}</DialogTitle>
+        <DialogHeader title={title} onClose={onClose} disabled={submitting} />
         <DialogContent>
           <Stack spacing={2} sx={{ pt: 1 }}>
             {error && <Alert severity="error">{error}</Alert>}

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { exportsApi, reportsApi } from "../../api/endpoints";
 import { useAuth } from "../../auth/AuthContext";
 import ExportMenu from "../common/ExportMenu";
+import ClearFiltersButton from "../common/ClearFiltersButton";
 import { monoFont } from "../../theme";
 import { daysAgoInput, endOfDayIso, formatMoney, startOfDayIso, toDateInput, unitLabels } from "../../utils/format";
 import ReportTable from "../common/ReportTable";
@@ -12,12 +13,14 @@ import { CategorySelect, cleanParams, DateField, FilterBar, LocationSelect } fro
 
 export default function TurnoverReport({ locations, categories }) {
   const { can } = useAuth();
-  const [filter, setFilter] = useState({
+  const defaults = () => ({
     from: daysAgoInput(30),
     to: toDateInput(new Date()),
     locationId: "",
     categoryId: "",
   });
+  const [filter, setFilter] = useState(defaults);
+  const changed = JSON.stringify(filter) !== JSON.stringify(defaults());
   const [report, setReport] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -98,7 +101,7 @@ export default function TurnoverReport({ locations, categories }) {
         <DateField label="Do" value={filter.to} onChange={set("to")} />
         <LocationSelect locations={locations} value={filter.locationId} onChange={set("locationId")} emptyLabel="Ceo lanac" />
         <CategorySelect categories={categories} value={filter.categoryId} onChange={set("categoryId")} />
-        <Box sx={{ flexGrow: 1 }} />
+        <ClearFiltersButton active={changed} onClick={() => setFilter(defaults())} />
         {can("reports.export") && (
           <ExportMenu
             fileName={`promet-${filter.from}-${filter.to}`}

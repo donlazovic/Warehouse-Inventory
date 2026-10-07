@@ -7,7 +7,6 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
-  DialogTitle,
   Divider,
   Stack,
   Table,
@@ -17,6 +16,7 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
+import DialogHeader from "../common/DialogHeader";
 import { exportsApi } from "../../api/endpoints";
 import { monoFont, statusColors } from "../../theme";
 import PdfPreviewDialog from "../common/PdfPreviewDialog";
@@ -48,7 +48,7 @@ export default function OrderDetailDialog({ detail, canMoveTo, onChangeStatus, o
 
   return (
     <Dialog open onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle component="div">
+      <DialogHeader onClose={onClose}>
         <Stack direction="row" spacing={1.5} sx={{
           alignItems: "center"
         }}>
@@ -62,7 +62,7 @@ export default function OrderDetailDialog({ detail, canMoveTo, onChangeStatus, o
           />
           <Chip size="small" variant="outlined" label={orderTypeLabels[order.orderType]} />
         </Stack>
-      </DialogTitle>
+      </DialogHeader>
 
       <DialogContent dividers>
         <Box

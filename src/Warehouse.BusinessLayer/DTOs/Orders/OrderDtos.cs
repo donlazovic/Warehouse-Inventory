@@ -43,7 +43,9 @@ public record OrderDto(
     DateTime? ApprovedAt,
     DateTime? CompletedAt,
     int ItemCount,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    string? SourceLocationCode,
+    string? DestinationLocationCode);
 
 public record OrderStatusHistoryDto(
     OrderStatus? FromStatus,

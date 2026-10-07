@@ -7,8 +7,8 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
-  DialogTitle,
 } from "@mui/material";
+import DialogHeader from "./DialogHeader";
 import { useEffect, useRef, useState } from "react";
 import { saveBlob } from "../../api/files";
 
@@ -50,7 +50,7 @@ export default function PdfPreviewDialog({ open, title, fileName, load, onClose 
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
-      <DialogTitle>{title}</DialogTitle>
+      <DialogHeader title={title} onClose={onClose} />
       <DialogContent dividers sx={{ p: 0, height: "78vh", bgcolor: "surface.preview" }}>
         {loading && (
           <Box sx={{ height: "100%", display: "grid", placeItems: "center" }}>

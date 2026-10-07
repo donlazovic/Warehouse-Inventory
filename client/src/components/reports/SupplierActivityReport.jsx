@@ -5,6 +5,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip as ChartTool
 import { exportsApi, reportsApi, suppliersApi } from "../../api/endpoints";
 import { useAuth } from "../../auth/AuthContext";
 import ExportMenu from "../common/ExportMenu";
+import ClearFiltersButton from "../common/ClearFiltersButton";
 import { monoFont } from "../../theme";
 import {
   endOfDayIso,
@@ -26,7 +27,9 @@ export default function SupplierActivityReport() {
   const theme = useTheme();
   const chart = theme.palette.chart;
   const [suppliers, setSuppliers] = useState([]);
-  const [filter, setFilter] = useState({ supplierId: "", from: monthsAgoInput(6), to: toDateInput(new Date()) });
+  const defaults = () => ({ supplierId: "", from: monthsAgoInput(6), to: toDateInput(new Date()) });
+  const [filter, setFilter] = useState(defaults);
+  const changed = JSON.stringify(filter) !== JSON.stringify(defaults());
   const [report, setReport] = useState(null);
   const [error, setError] = useState(null);
 
@@ -112,7 +115,7 @@ export default function SupplierActivityReport() {
         </TextField>
         <DateField label="Od" value={filter.from} onChange={set("from")} />
         <DateField label="Do" value={filter.to} onChange={set("to")} />
-        <Box sx={{ flexGrow: 1 }} />
+        <ClearFiltersButton active={changed} onClick={() => setFilter(defaults())} />
         {can("reports.export") && (
           <ExportMenu
             disabled={filter.supplierId === ""}

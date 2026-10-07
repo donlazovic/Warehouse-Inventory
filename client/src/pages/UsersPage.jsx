@@ -23,6 +23,7 @@ import { useCallback, useEffect, useState } from "react";
 import { rolesApi, usersApi } from "../api/endpoints";
 import { useAuth } from "../auth/AuthContext";
 import ConfirmDialog from "../components/common/ConfirmDialog";
+import ClearFiltersButton from "../components/common/ClearFiltersButton";
 import DataTable from "../components/common/DataTable";
 import PageHeader from "../components/common/PageHeader";
 import { useToast } from "../components/common/Toast";
@@ -322,13 +323,37 @@ export default function UsersPage() {
         }
       />
 
-      <Tabs value={tab} onChange={(_, next) => setTab(next)} sx={{ mb: 2, borderBottom: 1, borderColor: "divider" }}>
+      <Tabs
+        value={tab}
+        onChange={(_, next) => setTab(next)}
+        sx={{ mb: 2, borderBottom: 1, borderColor: "divider", "& .MuiTab-root": { minHeight: 48, px: 2.5 } }}
+      >
         <Tab
           value="users"
           label={
-            <Badge color="warning" badgeContent={pendingCount} sx={{ "& .MuiBadge-badge": { right: -12 } }}>
+            <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
               Korisnici
-            </Badge>
+              {pendingCount > 0 && (
+                <Box
+                  component="span"
+                  title={`${pendingCount} na cekanju`}
+                  sx={{
+                    minWidth: 20,
+                    height: 20,
+                    px: 0.75,
+                    borderRadius: 10,
+                    bgcolor: "warning.main",
+                    color: "warning.contrastText",
+                    fontSize: "0.72rem",
+                    fontWeight: 600,
+                    lineHeight: "20px",
+                    textAlign: "center",
+                  }}
+                >
+                  {pendingCount}
+                </Box>
+              )}
+            </Stack>
           }
         />
         <Tab value="roles" label="Uloge i dozvole" />
@@ -385,6 +410,7 @@ export default function UsersPage() {
                   <Tab key={option.value} value={option.value} label={option.label} />
                 ))}
               </Tabs>
+              <ClearFiltersButton active={query.hasActiveFilters} onClick={query.resetFilters} />
             </Stack>
           </Paper>
 

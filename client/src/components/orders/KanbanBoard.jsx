@@ -1,10 +1,11 @@
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { Box, Collapse, IconButton, Paper, Stack, Typography } from "@mui/material";
+import MoveDownIcon from "@mui/icons-material/MoveDown";
+import { Box, Button, Collapse, Paper, Stack, Typography } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import { useState } from "react";
+import useFitHeight from "../../hooks/useFitHeight";
 import { monoFont, statusColors } from "../../theme";
-
-const tintOf = (status) => `statusTint.${status}`;
 import { formatMoney } from "../../utils/format";
 import OrderCard from "./OrderCard";
 
@@ -20,7 +21,44 @@ const allowedTransitions = {
   6: [],
 };
 
-export default function KanbanBoard({ columns, canMove, canMoveTo = () => true, highlighted = new Set(), onMove, onOpen }) {
+function DropHint({ color, active, label }) {
+  return (
+    <Stack
+      direction="row"
+      sx={{
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 0.75,
+        mx: 1.25,
+        mt: 1.25,
+        py: 1.25,
+        borderRadius: 1.5,
+        border: "2px dashed",
+        borderColor: color,
+        bgcolor: active ? alpha(color, 0.18) : "transparent",
+        color: active ? color : "text.secondary",
+        fontSize: "0.8rem",
+        fontWeight: 600,
+        transition: "background-color 120ms, color 120ms",
+        flexShrink: 0,
+      }}
+    >
+      <MoveDownIcon sx={{ fontSize: 16 }} />
+      {label}
+    </Stack>
+  );
+}
+
+export default function KanbanBoard({
+  columns,
+  canMove,
+  canMoveTo = () => true,
+  highlighted = new Set(),
+  onMove,
+  onOpen,
+  onShowAll,
+}) {
+  const [fitRef, fitHeight] = useFitHeight({ reserve: 24, min: 460 });
   const [dragged, setDragged] = useState(null);
   const [hoveredStatus, setHoveredStatus] = useState(null);
   const [cancelledOpen, setCancelledOpen] = useState(false);
@@ -29,8 +67,9 @@ export default function KanbanBoard({ columns, canMove, canMoveTo = () => true, 
   const cancelledColumn = columns.find((column) => column.status === CANCELLED);
 
   const handleDragStart = (event, order) => {
-    setDragged(order);
     event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", String(order.id));
+    setDragged(order);
   };
 
   const handleDragEnd = () => {
@@ -39,17 +78,19 @@ export default function KanbanBoard({ columns, canMove, canMoveTo = () => true, 
   };
 
   const canDropOn = (status) =>
-    dragged
-      ? Boolean(allowedTransitions[dragged.status]?.includes(status) && canMoveTo(status))
-      : false;
+    dragged ? Boolean(allowedTransitions[dragged.status]?.includes(status) && canMoveTo(status)) : false;
 
   const dropProps = (status) => ({
     onDragOver: (event) => {
       if (!canDropOn(status)) return;
       event.preventDefault();
-      setHoveredStatus(status);
+      event.dataTransfer.dropEffect = "move";
+      if (hoveredStatus !== status) setHoveredStatus(status);
     },
-    onDragLeave: () => setHoveredStatus((current) => (current === status ? null : current)),
+    onDragLeave: (event) => {
+      if (event.currentTarget.contains(event.relatedTarget)) return;
+      setHoveredStatus((current) => (current === status ? null : current));
+    },
     onDrop: (event) => {
       event.preventDefault();
       if (dragged && canDropOn(status)) onMove(dragged, status);
@@ -57,55 +98,88 @@ export default function KanbanBoard({ columns, canMove, canMoveTo = () => true, 
     },
   });
 
+  const columnState = (status) => {
+    const target = canDropOn(status);
+    return {
+      target,
+      hovered: hoveredStatus === status,
+      dimmed: Boolean(dragged) && !target && dragged.status !== status,
+    };
+  };
+
+  const renderCard = (order, extraSx) => (
+    <OrderCard
+      key={order.id}
+      order={order}
+      draggable={canMove && (allowedTransitions[order.status]?.length ?? 0) > 0}
+      dragging={dragged?.id === order.id}
+      highlighted={highlighted.has(order.id)}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onClick={onOpen}
+      sx={extraSx}
+    />
+  );
+
   return (
-    <Box>
+    <Box
+      ref={fitRef}
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 1.5,
+        height: { xs: "auto", lg: fitHeight ?? "auto" },
+      }}
+    >
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", lg: "repeat(5, minmax(230px, 1fr))" },
+          gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))", lg: "repeat(5, minmax(0, 1fr))" },
           gap: 1.5,
-          alignItems: "start",
+          flex: 1,
+          minHeight: 0,
         }}
       >
         {flowColumns.map((column) => {
-          const isTarget = dragged && canDropOn(column.status);
-          const isHovered = hoveredStatus === column.status;
+          const color = statusColors[column.status];
+          const { target, hovered, dimmed } = columnState(column.status);
+          const hidden = column.totalCount - column.orders.length;
 
           return (
             <Paper
               key={column.status}
               variant="outlined"
-              sx={{
-                overflow: "hidden",
-                borderColor: isTarget ? statusColors[column.status] : "divider",
-                borderWidth: isTarget ? 2 : 1,
-                transition: "border-color 120ms",
-              }}
               {...dropProps(column.status)}
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                minHeight: { xs: 220, lg: 0 },
+                maxHeight: { xs: 520, lg: "none" },
+                overflow: "hidden",
+                opacity: dimmed ? 0.4 : 1,
+                outline: target ? `2px solid ${color}` : "none",
+                outlineOffset: -1,
+                bgcolor: hovered ? `statusTint.${column.status}` : "background.paper",
+                transition: "opacity 150ms, background-color 120ms",
+              }}
             >
               <Stack
                 direction="row"
-                spacing={1}
-                sx={{
-                  alignItems: "center",
-                  bgcolor: statusColors[column.status],
-                  color: "#FFFFFF",
-                  px: 1.5,
-                  py: 1
-                }}>
-                <Typography variant="body2" sx={{ fontWeight: 600, flexGrow: 1 }}>
+                sx={{ alignItems: "center", gap: 1, bgcolor: color, color: "#FFFFFF", px: 1.5, py: 0.875, flexShrink: 0 }}
+              >
+                <Typography variant="body2" sx={{ fontWeight: 600, flexGrow: 1 }} noWrap>
                   {column.title}
                 </Typography>
                 <Box
                   sx={{
                     minWidth: 22,
                     px: 0.75,
-                    py: 0.125,
                     borderRadius: 10,
                     bgcolor: "rgba(255,255,255,0.22)",
                     fontSize: "0.74rem",
                     fontWeight: 600,
                     textAlign: "center",
+                    lineHeight: "20px",
                   }}
                 >
                   {column.totalCount}
@@ -115,114 +189,104 @@ export default function KanbanBoard({ columns, canMove, canMoveTo = () => true, 
               <Box
                 sx={{
                   px: 1.5,
-                  py: 0.75,
-                  bgcolor: tintOf(column.status),
+                  py: 0.625,
                   borderBottom: "1px solid",
                   borderColor: "divider",
+                  bgcolor: `statusTint.${column.status}`,
                   fontFamily: monoFont,
                   fontSize: "0.72rem",
                   color: "text.secondary",
+                  flexShrink: 0,
                 }}
               >
                 {formatMoney(column.totalValue)}
               </Box>
 
-              <Box
-                sx={{
-                  p: 1.25,
-                  minHeight: 180,
-                  bgcolor: isHovered ? tintOf(column.status) : "background.paper",
-                  transition: "background-color 120ms",
-                }}
-              >
-                {column.orders.map((order) => (
-                  <OrderCard
-                    key={order.id}
-                    order={order}
-                    draggable={canMove}
-                    highlighted={highlighted.has(order.id)}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
-                    onClick={onOpen}
-                  />
-                ))}
+              {target && <DropHint color={color} active={hovered} label={`Pusti u „${column.title}"`} />}
 
-                {column.orders.length === 0 && (
-                  <Typography
-                    variant="body2"
-                    sx={{ color: "text.disabled", fontSize: "0.78rem", py: 3, textAlign: "center" }}
-                  >
-                    {isTarget ? "Pustite ovde" : "Prazno"}
+              <Stack sx={{ flex: 1, minHeight: 0, overflowY: "auto", p: 1.25, gap: 1 }}>
+                {column.orders.map((order) => renderCard(order))}
+
+                {column.orders.length === 0 && !target && (
+                  <Typography variant="body2" sx={{ color: "text.disabled", fontSize: "0.78rem", py: 3, textAlign: "center" }}>
+                    Nema naloga
                   </Typography>
                 )}
-              </Box>
+
+                {hidden > 0 && (
+                  <Button size="small" onClick={() => onShowAll?.(column.status)} sx={{ flexShrink: 0, mt: 0.5 }}>
+                    Jos {hidden.toLocaleString("sr-Latn-RS")} — prikazi u listi
+                  </Button>
+                )}
+              </Stack>
             </Paper>
           );
         })}
       </Box>
 
-      {cancelledColumn && (
-        <Paper
-          variant="outlined"
-          sx={{
-            mt: 1.5,
-            overflow: "hidden",
-            borderColor: dragged && canDropOn(CANCELLED) ? statusColors[CANCELLED] : "divider",
-            borderWidth: dragged && canDropOn(CANCELLED) ? 2 : 1,
-            bgcolor: hoveredStatus === CANCELLED ? tintOf(CANCELLED) : "background.paper",
-            transition: "background-color 120ms, border-color 120ms",
-          }}
-          {...dropProps(CANCELLED)}
-        >
-          <Stack
-            direction="row"
-            spacing={1}
-            onClick={() => setCancelledOpen((current) => !current)}
-            sx={{
-              alignItems: "center",
-              p: 1.5,
-              cursor: "pointer"
-            }}>
-            <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: statusColors[CANCELLED] }} />
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-              {cancelledColumn.title}
-            </Typography>
-            <Typography variant="body2" sx={{ color: "text.secondary", fontSize: "0.78rem", flexGrow: 1 }}>
-              {cancelledColumn.totalCount}
-            </Typography>
-            {dragged && canDropOn(CANCELLED) && (
-              <Typography variant="body2" sx={{ color: "error.main", fontSize: "0.75rem" }}>
-                Pustite ovde da biste otkazali
-              </Typography>
-            )}
-            <IconButton size="small">
-              {cancelledOpen ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
-            </IconButton>
-          </Stack>
+      {cancelledColumn && (() => {
+        const color = statusColors[CANCELLED];
+        const { target, hovered, dimmed } = columnState(CANCELLED);
+        const hidden = cancelledColumn.totalCount - cancelledColumn.orders.length;
 
-          <Collapse in={cancelledOpen}>
-            <Box
-              sx={{
-                px: 1.5,
-                pb: 1.5,
-                display: "grid",
-                gridTemplateColumns: { xs: "1fr", md: "repeat(auto-fill, minmax(240px, 1fr))" },
-                gap: 1,
-              }}
+        return (
+          <Paper
+            variant="outlined"
+            {...dropProps(CANCELLED)}
+            sx={{
+              flexShrink: 0,
+              overflow: "hidden",
+              opacity: dimmed ? 0.4 : 1,
+              outline: target ? `2px solid ${color}` : "none",
+              outlineOffset: -1,
+              bgcolor: hovered ? `statusTint.${CANCELLED}` : "background.paper",
+              transition: "opacity 150ms, background-color 120ms",
+            }}
+          >
+            <Stack
+              direction="row"
+              onClick={() => setCancelledOpen((current) => !current)}
+              sx={{ alignItems: "center", gap: 1, px: 1.5, py: 1, cursor: "pointer" }}
             >
-              {cancelledColumn.orders.length === 0 ? (
-                <Typography variant="body2" sx={{ color: "text.disabled", fontSize: "0.78rem" }}>
-                  Nema otkazanih naloga.
+              <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: color }} />
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {cancelledColumn.title}
+              </Typography>
+              <Typography variant="body2" sx={{ color: "text.secondary", fontSize: "0.78rem" }}>
+                {cancelledColumn.totalCount}
+              </Typography>
+              <Box sx={{ flexGrow: 1 }} />
+              {target ? (
+                <Typography variant="body2" sx={{ color, fontSize: "0.78rem", fontWeight: 600 }}>
+                  Pusti ovde da otkazes nalog
                 </Typography>
               ) : (
-                cancelledColumn.orders.map((order) => (
-                  <OrderCard key={order.id} order={order} highlighted={highlighted.has(order.id)} onClick={onOpen} />
-                ))
+                <Typography variant="body2" sx={{ color: "text.secondary", fontSize: "0.75rem" }}>
+                  {cancelledOpen ? "Sakrij" : "Prikazi"}
+                </Typography>
               )}
-            </Box>
-          </Collapse>
-        </Paper>
-      )}
+              {cancelledOpen ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+            </Stack>
+
+            <Collapse in={cancelledOpen}>
+              <Stack direction="row" sx={{ gap: 1, overflowX: "auto", px: 1.5, pb: 1.5, alignItems: "stretch" }}>
+                {cancelledColumn.orders.length === 0 ? (
+                  <Typography variant="body2" sx={{ color: "text.disabled", fontSize: "0.78rem" }}>
+                    Nema otkazanih naloga.
+                  </Typography>
+                ) : (
+                  cancelledColumn.orders.map((order) => renderCard(order, { width: 260, flexShrink: 0 }))
+                )}
+                {hidden > 0 && (
+                  <Button size="small" onClick={() => onShowAll?.(CANCELLED)} sx={{ flexShrink: 0, whiteSpace: "nowrap" }}>
+                    Jos {hidden} u listi
+                  </Button>
+                )}
+              </Stack>
+            </Collapse>
+          </Paper>
+        );
+      })()}
     </Box>
   );
 }

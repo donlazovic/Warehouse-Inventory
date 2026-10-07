@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from "react";
 import useFitHeight from "../../hooks/useFitHeight";
 import {
   Paper,
@@ -12,11 +13,18 @@ import {
 
 export default function ReportTable({ columns, rows, rowKey, emptyText = "Nema podataka za izabrane filtere.", maxHeight, reserve = 72 }) {
   const [fitRef, fitHeight] = useFitHeight({ reserve });
+  const headRef = useRef(null);
+  const [headHeight, setHeadHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    const height = headRef.current?.offsetHeight ?? 0;
+    if (height !== headHeight) setHeadHeight(height);
+  });
   return (
-    <Paper variant="outlined">
-      <TableContainer ref={fitRef} sx={{ maxHeight: maxHeight ?? fitHeight ?? undefined }}>
+    <Paper variant="outlined" sx={{ overflow: "hidden" }}>
+      <TableContainer ref={fitRef} sx={{ maxHeight: maxHeight ?? fitHeight ?? undefined, "&::-webkit-scrollbar-track": { marginTop: `${headHeight}px` } }}>
         <Table size="small" stickyHeader>
-          <TableHead>
+          <TableHead ref={headRef}>
             <TableRow>
               {columns.map((column) => (
                 <TableCell key={column.field} align={column.align ?? "left"}>

@@ -3,6 +3,7 @@ import { useCallback } from "react";
 import { storesApi, suppliersApi } from "../api/endpoints";
 import { useAuth } from "../auth/AuthContext";
 import ConfirmDialog from "../components/common/ConfirmDialog";
+import ClearFiltersButton from "../components/common/ClearFiltersButton";
 import DataTable from "../components/common/DataTable";
 import PageHeader from "../components/common/PageHeader";
 import RowActions from "../components/common/RowActions";
@@ -138,6 +139,7 @@ export default function PartnersPage({ kind }) {
             <MenuItem value="true">Aktivni</MenuItem>
             <MenuItem value="false">Neaktivni</MenuItem>
           </TextField>
+          <ClearFiltersButton active={query.hasActiveFilters} onClick={query.resetFilters} />
         </Stack>
       </Paper>
 

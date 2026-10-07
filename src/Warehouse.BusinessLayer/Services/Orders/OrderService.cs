@@ -515,5 +515,7 @@ public class OrderService : IOrderService
             x.ApprovedAt,
             x.CompletedAt,
             x.Items.Count,
-            x.CreatedAt));
+            x.CreatedAt,
+            x.SourceLocation != null ? x.SourceLocation.Code : null,
+            x.DestinationLocation != null ? x.DestinationLocation.Code : null));
 }

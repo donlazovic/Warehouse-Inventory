@@ -23,6 +23,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { categoriesApi, exportParams, exportsApi, locationsApi, productsApi, stockApi } from "../api/endpoints";
 import { useAuth } from "../auth/AuthContext";
+import ClearFiltersButton from "../components/common/ClearFiltersButton";
 import DataTable from "../components/common/DataTable";
 import ExportMenu from "../components/common/ExportMenu";
 import PageHeader from "../components/common/PageHeader";
@@ -345,6 +346,7 @@ export default function StockPage() {
             }
             label="Ispod minimuma"
           />
+          <ClearFiltersButton active={query.hasActiveFilters} onClick={query.resetFilters} />
         </Stack>
       </Paper>
 
