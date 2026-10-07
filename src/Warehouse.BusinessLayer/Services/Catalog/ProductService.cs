@@ -28,11 +28,10 @@ public class ProductService : IProductService
         if (filter.IsActive.HasValue)
             query = query.Where(x => x.IsActive == filter.IsActive);
 
-        if (filter.CreatedFrom.HasValue)
-            query = query.Where(x => x.CreatedAt >= filter.CreatedFrom);
+        if (filter.DateFrom.HasValue && filter.DateTo.HasValue && filter.DateFrom > filter.DateTo)
+            throw new AppException("Pocetni datum ne moze biti posle krajnjeg.");
 
-        if (filter.CreatedTo.HasValue)
-            query = query.Where(x => x.CreatedAt <= filter.CreatedTo);
+        query = ApplyPeriod(query, filter);
 
         if (filter.OnlyFavorites)
             query = query.Where(x => x.FavoritedBy.Any(f => f.UserId == currentUserId));
@@ -238,6 +237,27 @@ public class ProductService : IProductService
 
         await _uow.SaveChangesAsync(ct);
         return true;
+    }
+
+    private static IQueryable<Product> ApplyPeriod(IQueryable<Product> query, ProductFilterRequest filter)
+    {
+        var from = filter.DateFrom;
+        var to = filter.DateTo;
+
+        if (!from.HasValue && !to.HasValue)
+            return query;
+
+        if (filter.PeriodBasis == ProductPeriodBasis.Movement)
+            return query.Where(x => x.StockMovements.Any(m =>
+                (!from.HasValue || m.CreatedAt >= from) && (!to.HasValue || m.CreatedAt <= to)));
+
+        if (from.HasValue)
+            query = query.Where(x => x.CreatedAt >= from);
+
+        if (to.HasValue)
+            query = query.Where(x => x.CreatedAt <= to);
+
+        return query;
     }
 
     private static void ValidateStockLimits(decimal min, decimal max)

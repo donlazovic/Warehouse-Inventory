@@ -485,6 +485,9 @@ public class OrderService : IOrderService
         if (filter.StoreId.HasValue)
             query = query.Where(x => x.StoreId == filter.StoreId);
 
+        if (filter.CreatedFrom.HasValue && filter.CreatedTo.HasValue && filter.CreatedFrom > filter.CreatedTo)
+            throw new AppException("Pocetni datum ne moze biti posle krajnjeg.");
+
         if (filter.CreatedFrom.HasValue)
             query = query.Where(x => x.CreatedAt >= filter.CreatedFrom);
 

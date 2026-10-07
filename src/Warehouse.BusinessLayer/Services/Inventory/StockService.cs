@@ -82,6 +82,10 @@ public class StockService : IStockService
         if (filter.LocationId.HasValue)
             query = query.Where(x => x.FromLocationId == filter.LocationId || x.ToLocationId == filter.LocationId);
 
+        if (filter.StoreId.HasValue)
+            query = query.Where(x => (x.FromLocation != null && x.FromLocation.StoreId == filter.StoreId)
+                                  || (x.ToLocation != null && x.ToLocation.StoreId == filter.StoreId));
+
         if (filter.MovementType.HasValue)
             query = query.Where(x => x.MovementType == filter.MovementType);
 
@@ -96,6 +100,9 @@ public class StockService : IStockService
 
         if (filter.DateFrom.HasValue)
             query = query.Where(x => x.CreatedAt >= filter.DateFrom);
+
+        if (filter.DateFrom.HasValue && filter.DateTo.HasValue && filter.DateFrom > filter.DateTo)
+            throw new AppException("Pocetni datum ne moze biti posle krajnjeg.");
 
         if (filter.DateTo.HasValue)
             query = query.Where(x => x.CreatedAt <= filter.DateTo);

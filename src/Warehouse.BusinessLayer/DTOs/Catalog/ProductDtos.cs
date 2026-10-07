@@ -12,13 +12,20 @@ public enum StockStatusFilter
     AboveMaximum = 4
 }
 
+public enum ProductPeriodBasis
+{
+    Created = 0,
+    Movement = 1
+}
+
 public class ProductFilterRequest : PagedRequest
 {
     public int? CategoryId { get; set; }
     public bool? IsActive { get; set; }
     public StockStatusFilter? StockStatus { get; set; }
-    public DateTime? CreatedFrom { get; set; }
-    public DateTime? CreatedTo { get; set; }
+    public DateTime? DateFrom { get; set; }
+    public DateTime? DateTo { get; set; }
+    public ProductPeriodBasis PeriodBasis { get; set; } = ProductPeriodBasis.Created;
     public bool OnlyFavorites { get; set; }
 }
 

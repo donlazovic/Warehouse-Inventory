@@ -1,7 +1,7 @@
 import ArrowRightAltIcon from "@mui/icons-material/ArrowRightAlt";
 import { Alert, Box, Chip, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
-import { exportParams, exportsApi, locationsApi, stockApi } from "../api/endpoints";
+import { exportParams, exportsApi, locationsApi, stockApi, storesApi } from "../api/endpoints";
 import { useAuth } from "../auth/AuthContext";
 import ClearFiltersButton from "../components/common/ClearFiltersButton";
 import DataTable from "../components/common/DataTable";
@@ -35,12 +35,14 @@ const MOVEMENT_URL_FILTER = {
   productId: "number",
   movementType: "number",
   locationId: "number",
+  storeId: "number",
   issueReason: "number",
 };
 
 export default function MovementsPage() {
   const { can } = useAuth();
   const [locations, setLocations] = useState([]);
+  const [stores, setStores] = useState([]);
   const [range, setRange] = useState({ from: "", to: "" });
 
   const fetcher = useCallback((params) => stockApi.movements(params), []);
@@ -50,7 +52,18 @@ export default function MovementsPage() {
 
   useEffect(() => {
     locationsApi.lookup().then(setLocations).catch(() => {});
-  }, []);
+    if (can("stores.view")) {
+      storesApi
+        .list({ pageSize: 100, sortBy: "name" })
+        .then((result) => setStores(result.items))
+        .catch(() => {});
+    }
+  }, [can]);
+
+  const storeName = (id) => {
+    const store = stores.find((item) => item.id === Number(id));
+    return store ? `${store.code} — ${store.name}` : `Objekat #${id}`;
+  };
 
   useRealtimeEvent("stockChanged", () => query.reload());
 
@@ -267,6 +280,21 @@ export default function MovementsPage() {
             variant="outlined"
             label={query.rows[0]?.productName ?? `#${query.filter.productId}`}
             onDelete={() => query.patchFilter({ productId: null })}
+          />
+        </Stack>
+      )}
+
+      {query.filter.storeId && (
+        <Stack direction="row" sx={{ alignItems: "center", gap: 1, mb: 2 }}>
+          <Typography variant="body2" sx={{ color: "text.secondary" }}>
+            Sva kretanja na lokacijama objekta:
+          </Typography>
+          <Chip
+            size="small"
+            color="primary"
+            variant="outlined"
+            label={storeName(query.filter.storeId)}
+            onDelete={() => query.patchFilter({ storeId: null })}
           />
         </Stack>
       )}

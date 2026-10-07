@@ -103,7 +103,7 @@ public class ExportService : IExportService
 
         var report = new TabularReport(
             "Nalozi",
-            filter.Status.HasValue ? $"Status: {Status(filter.Status.Value)}" : null,
+            await OrderFilterLabelAsync(filter, ct),
             new List<(string, string)>
             {
                 ("Broj naloga", result.TotalCount.ToString("#,##0", Culture)),
@@ -197,13 +197,9 @@ public class ExportService : IExportService
         filter.ExpandForExport(MaxRows);
         var result = await _stock.GetMovementsAsync(filter, ct);
 
-        var period = filter.DateFrom.HasValue || filter.DateTo.HasValue
-            ? $"Period: {(filter.DateFrom.HasValue ? Date(filter.DateFrom.Value) : "početak")} — {(filter.DateTo.HasValue ? Date(filter.DateTo.Value) : "danas")}"
-            : null;
-
         var report = new TabularReport(
             "Kretanje robe",
-            period,
+            await MovementFilterLabelAsync(filter, ct),
             new List<(string, string)> { ("Zapisa", result.TotalCount.ToString("#,##0", Culture)) },
             new[]
             {
@@ -388,6 +384,53 @@ public class ExportService : IExportService
         => format == ExportFormat.Pdf
             ? new ExportFile(PdfDocuments.Tabular(report, _company), PdfType, $"{baseName}.pdf")
             : new ExportFile(ExcelDocuments.Tabular(report, _company), XlsxType, $"{baseName}.xlsx");
+
+    private async Task<string?> OrderFilterLabelAsync(OrderFilterRequest filter, CancellationToken ct)
+    {
+        var parts = new List<string?>
+        {
+            filter.OrderType.HasValue ? $"Tip: {OrderKind(filter.OrderType.Value)}" : null,
+            filter.Status.HasValue ? $"Status: {Status(filter.Status.Value)}" : null,
+            filter.SupplierId.HasValue
+                ? "Dobavljač: " + await _uow.Repository<Supplier>().Query()
+                    .Where(x => x.Id == filter.SupplierId).Select(x => x.Name).FirstOrDefaultAsync(ct)
+                : null,
+            filter.StoreId.HasValue
+                ? "Objekat: " + await _uow.Repository<Store>().Query()
+                    .Where(x => x.Id == filter.StoreId).Select(x => x.Name).FirstOrDefaultAsync(ct)
+                : null,
+            Period(filter.CreatedFrom, filter.CreatedTo),
+            string.IsNullOrWhiteSpace(filter.Search) ? null : $"Pretraga: {filter.Search.Trim()}",
+        };
+
+        return JoinAll(parts);
+    }
+
+    private async Task<string?> MovementFilterLabelAsync(StockMovementFilterRequest filter, CancellationToken ct)
+    {
+        var parts = new List<string?>
+        {
+            await LocationLabelAsync(filter.LocationId, ct),
+            filter.StoreId.HasValue
+                ? "Objekat: " + await _uow.Repository<Store>().Query()
+                    .Where(x => x.Id == filter.StoreId).Select(x => x.Name).FirstOrDefaultAsync(ct)
+                : null,
+            Period(filter.DateFrom, filter.DateTo),
+        };
+
+        return JoinAll(parts);
+    }
+
+    private static string? Period(System.DateTime? from, System.DateTime? to)
+        => from.HasValue || to.HasValue
+            ? $"Period: {(from.HasValue ? Date(from.Value) : "početak")} — {(to.HasValue ? Date(to.Value) : "danas")}"
+            : null;
+
+    private static string? JoinAll(IEnumerable<string?> parts)
+    {
+        var text = string.Join(" · ", parts.Where(x => !string.IsNullOrWhiteSpace(x)));
+        return text.Length == 0 ? null : text;
+    }
 
     private async Task<string?> LocationLabelAsync(int? locationId, CancellationToken ct)
     {

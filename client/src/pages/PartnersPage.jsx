@@ -1,5 +1,8 @@
+import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
+import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
 import { Alert, Box, Button, Chip, MenuItem, Paper, Stack, TextField } from "@mui/material";
 import { useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { storesApi, suppliersApi } from "../api/endpoints";
 import { useAuth } from "../auth/AuthContext";
 import ConfirmDialog from "../components/common/ConfirmDialog";
@@ -24,6 +27,7 @@ const configs = {
     deleted: "Dobavljac je obrisan.",
     emptyTitle: "Nema dobavljaca",
     emptyHint: "Dodajte dobavljaca da biste mogli da kreirate ulazne naloge.",
+    filterKey: "supplierId",
   },
   store: {
     api: storesApi,
@@ -35,12 +39,35 @@ const configs = {
     deleted: "Objekat je obrisan.",
     emptyTitle: "Nema objekata",
     emptyHint: "Dodajte objekat da biste mogli da kreirate izlazne naloge.",
+    filterKey: "storeId",
   },
 };
 
 export default function PartnersPage({ kind }) {
   const config = configs[kind];
   const { can } = useAuth();
+  const navigate = useNavigate();
+
+  const historyActions = (row) => [
+    ...(can("orders.view")
+      ? [
+          {
+            title: "Istorija naloga",
+            icon: ReceiptLongOutlinedIcon,
+            onClick: () => navigate(`/nalozi?${config.filterKey}=${row.id}`),
+          },
+        ]
+      : []),
+    ...(kind === "store" && can("stock.view")
+      ? [
+          {
+            title: "Kretanje robe u objektu",
+            icon: SwapHorizIcon,
+            onClick: () => navigate(`/kretanja?storeId=${row.id}`),
+          },
+        ]
+      : []),
+  ];
 
   const fetcher = useCallback((params) => config.api.list(params), [config.api]);
   const query = usePagedQuery(fetcher, { sortBy: "name" });
@@ -91,9 +118,10 @@ export default function PartnersPage({ kind }) {
       field: "actions",
       headerName: "",
       align: "right",
-      width: 96,
+      width: kind === "store" ? 168 : 132,
       render: (row) => (
         <RowActions
+          extra={historyActions(row)}
           onEdit={can(`${config.permissionPrefix}.update`) ? () => crud.openEdit(row) : undefined}
           onDelete={can(`${config.permissionPrefix}.delete`) ? () => crud.setDeleting(row) : undefined}
         />

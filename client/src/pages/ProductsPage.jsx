@@ -19,6 +19,7 @@ import { categoriesApi, productsApi } from "../api/endpoints";
 import { useAuth } from "../auth/AuthContext";
 import ConfirmDialog from "../components/common/ConfirmDialog";
 import ClearFiltersButton from "../components/common/ClearFiltersButton";
+import DateRangeFields from "../components/common/DateRangeFields";
 import DataTable from "../components/common/DataTable";
 import SearchField from "../components/common/SearchField";
 import PageHeader from "../components/common/PageHeader";
@@ -27,7 +28,7 @@ import ProductFormDialog from "../components/forms/ProductFormDialog";
 import useCrudPage from "../hooks/useCrudPage";
 import usePagedQuery from "../hooks/usePagedQuery";
 import { monoFont } from "../theme";
-import { formatMoney, formatQuantity, unitLabels } from "../utils/format";
+import { formatDate, formatMoney, formatQuantity, unitLabels } from "../utils/format";
 
 const stockStatusOptions = [
   { value: "", label: "Sve zalihe" },
@@ -137,6 +138,12 @@ export default function ProductsPage() {
       ),
     },
     {
+      field: "createdat",
+      headerName: "Dodat",
+      sortable: true,
+      render: (row) => formatDate(row.createdAt),
+    },
+    {
       field: "isActive",
       headerName: "Status",
       render: (row) => (
@@ -177,8 +184,9 @@ export default function ProductsPage() {
       />
 
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-        <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{
-          alignItems: { md: "center" }
+        <Stack direction={{ xs: "column", md: "row" }} spacing={2} useFlexGap sx={{
+          alignItems: { md: "flex-start" },
+          flexWrap: "wrap"
         }}>
           <SearchField
             label="Pretraga po nazivu ili SKU"
@@ -216,6 +224,23 @@ export default function ProductsPage() {
             ))}
           </TextField>
 
+          <TextField
+            select
+            label="Period se odnosi na"
+            value={query.filter.periodBasis ?? 0}
+            onChange={(event) => query.patchFilter({ periodBasis: event.target.value })}
+            sx={{ minWidth: 190 }}
+          >
+            <MenuItem value={0}>Datum dodavanja</MenuItem>
+            <MenuItem value={1}>Promet robe</MenuItem>
+          </TextField>
+
+          <DateRangeFields
+            from={query.filter.dateFrom}
+            to={query.filter.dateTo}
+            onChange={({ from, to }) => query.patchFilter({ dateFrom: from, dateTo: to })}
+          />
+
           <FormControlLabel
             control={
               <Switch
@@ -224,6 +249,7 @@ export default function ProductsPage() {
               />
             }
             label="Samo omiljeni"
+            sx={{ mt: { md: 1 } }}
           />
           <ClearFiltersButton active={query.hasActiveFilters} onClick={query.resetFilters} />
         </Stack>
@@ -254,6 +280,8 @@ export default function ProductsPage() {
           mt: 2
         }}>
         Kolicine ispod minimalne zalihe prikazane su naglaseno.
+        {query.filter.periodBasis === 1 && (query.filter.dateFrom || query.filter.dateTo) &&
+          " Prikazani su proizvodi koji su imali bar jedno kretanje robe u izabranom periodu."}
       </Typography>
 
       <ProductFormDialog

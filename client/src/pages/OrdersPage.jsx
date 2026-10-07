@@ -5,6 +5,7 @@ import {
   Box,
   Button,
   Chip,
+  ListSubheader,
   MenuItem,
   Paper,
   Stack,
@@ -25,6 +26,7 @@ import {
 } from "../api/endpoints";
 import { useAuth } from "../auth/AuthContext";
 import ClearFiltersButton from "../components/common/ClearFiltersButton";
+import DateRangeFields from "../components/common/DateRangeFields";
 import DataTable from "../components/common/DataTable";
 import SearchField from "../components/common/SearchField";
 import ExportMenu from "../components/common/ExportMenu";
@@ -51,7 +53,29 @@ const permissionForStatus = (status) => {
   return "orders.update";
 };
 
-const ORDER_URL_FILTER = { status: "number", orderType: "number" };
+const ORDER_URL_FILTER = {
+  status: "number",
+  orderType: "number",
+  supplierId: "number",
+  storeId: "number",
+};
+
+// Filteri koji vaze i za tablu i za listu, pa se prenose pri promeni prikaza.
+const SHARED_KEYS = ["search", "orderType", "supplierId", "storeId", "createdFrom", "createdTo"];
+
+const pickShared = (filter) =>
+  Object.fromEntries(SHARED_KEYS.map((key) => [key, filter[key] ?? null]));
+
+const partnerValue = (filter) =>
+  filter.supplierId ? `s:${filter.supplierId}` : filter.storeId ? `o:${filter.storeId}` : "";
+
+const partnerFilter = (value) => {
+  if (!value) return { supplierId: null, storeId: null };
+  const [kind, id] = value.split(":");
+  return kind === "s"
+    ? { supplierId: Number(id), storeId: null }
+    : { supplierId: null, storeId: Number(id) };
+};
 
 export default function OrdersPage() {
   const { can } = useAuth();
@@ -60,12 +84,15 @@ export default function OrdersPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [view, setView] = useState(() => (searchParams.has("status") ? "list" : "kanban"));
+  const [view, setView] = useState(() =>
+    ["status", "supplierId", "storeId"].some((key) => searchParams.has(key)) ? "list" : "kanban"
+  );
   const [kanbanColumns, setKanbanColumns] = useState([]);
   const [kanbanLoading, setKanbanLoading] = useState(true);
   const [kanbanFilter, setKanbanFilter] = useState({});
 
   const [lookups, setLookups] = useState({ products: [], suppliers: [], stores: [], locations: [] });
+  const [partners, setPartners] = useState({ suppliers: [], stores: [] });
   const [detail, setDetail] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -101,18 +128,20 @@ export default function OrdersPage() {
   useEffect(() => {
     Promise.all([
       productsApi.list({ pageSize: 100, isActive: true }),
-      suppliersApi.list({ pageSize: 100, isActive: true }),
-      storesApi.list({ pageSize: 100, isActive: true }),
+      suppliersApi.list({ pageSize: 100, sortBy: "name" }),
+      storesApi.list({ pageSize: 100, sortBy: "name" }),
       locationsApi.lookup(),
     ])
-      .then(([products, suppliers, stores, locations]) =>
+      .then(([products, suppliers, stores, locations]) => {
+        // Forma nudi samo aktivne partnere, a filter i neaktivne — da bi se videla i njihova istorija.
+        setPartners({ suppliers: suppliers.items, stores: stores.items });
         setLookups({
           products: products.items,
-          suppliers: suppliers.items,
-          stores: stores.items,
+          suppliers: suppliers.items.filter((item) => item.isActive),
+          stores: stores.items.filter((item) => item.isActive),
           locations,
-        })
-      )
+        });
+      })
       .catch(() => {});
   }, []);
 
@@ -248,32 +277,90 @@ export default function OrdersPage() {
     { field: "createdAt", headerName: "Datum", render: (row) => formatDate(row.createdAt) },
   ];
 
+  const currentFilter = view === "kanban" ? kanbanFilter : query.filter;
+
+  const applyFilter = (changes) =>
+    view === "kanban"
+      ? setKanbanFilter((current) => ({ ...current, ...changes }))
+      : query.patchFilter(changes);
+
+  const switchView = (next) => {
+    if (!next || next === view) return;
+    if (next === "list") query.patchFilter(pickShared(kanbanFilter));
+    else setKanbanFilter(pickShared(query.filter));
+    setView(next);
+  };
+
+  const changeOrderType = (orderType) => {
+    const changes = { orderType };
+    // Ulazni nalog nema prodajni objekat, izlazni nema dobavljaca — nekompatibilan izbor se brise.
+    if (orderType === 1) changes.storeId = null;
+    if (orderType === 2) changes.supplierId = null;
+    applyFilter(changes);
+  };
+
+  const showSuppliers = currentFilter.orderType !== 2;
+  const showStores = currentFilter.orderType !== 1;
+
+  const partnerOptions = [
+    ...(showSuppliers && partners.suppliers.length > 0
+      ? [<ListSubheader key="h-s">Dobavljaci</ListSubheader>]
+      : []),
+    ...(showSuppliers
+      ? partners.suppliers.map((supplier) => (
+          <MenuItem key={`s:${supplier.id}`} value={`s:${supplier.id}`}>
+            {supplier.name}
+            {!supplier.isActive && " (neaktivan)"}
+          </MenuItem>
+        ))
+      : []),
+    ...(showStores && partners.stores.length > 0
+      ? [<ListSubheader key="h-o">Prodajni objekti</ListSubheader>]
+      : []),
+    ...(showStores
+      ? partners.stores.map((store) => (
+          <MenuItem key={`o:${store.id}`} value={`o:${store.id}`}>
+            {store.code} — {store.name}
+            {!store.isActive && " (neaktivan)"}
+          </MenuItem>
+        ))
+      : []),
+  ];
+
   const filterControls = (
-    <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+    <Stack
+      direction={{ xs: "column", md: "row" }}
+      spacing={2}
+      useFlexGap
+      sx={{ flexWrap: "wrap", alignItems: { md: "flex-start" } }}
+    >
       <SearchField
         label="Pretraga po broju naloga"
-        value={view === "kanban" ? kanbanFilter.search : query.filter.search}
-        onSearch={(value) =>
-          view === "kanban"
-            ? setKanbanFilter((current) => ({ ...current, search: value }))
-            : query.patchFilter({ search: value })
-        }
-        sx={{minWidth: 240 }}
+        value={currentFilter.search}
+        onSearch={(value) => applyFilter({ search: value })}
+        sx={{ minWidth: 240 }}
       />
       <TextField
         select
         label="Tip"
-        value={(view === "kanban" ? kanbanFilter.orderType : query.filter.orderType) ?? ""}
-        onChange={(event) =>
-          view === "kanban"
-            ? setKanbanFilter((current) => ({ ...current, orderType: event.target.value }))
-            : query.patchFilter({ orderType: event.target.value })
-        }
-        sx={{ minWidth: 160 }}
+        value={currentFilter.orderType ?? ""}
+        onChange={(event) => changeOrderType(event.target.value)}
+        sx={{ minWidth: 140 }}
       >
         <MenuItem value="">Svi</MenuItem>
         <MenuItem value={1}>Ulazni</MenuItem>
         <MenuItem value={2}>Izlazni</MenuItem>
+      </TextField>
+
+      <TextField
+        select
+        label="Druga strana"
+        value={partners.suppliers.length + partners.stores.length > 0 ? partnerValue(currentFilter) : ""}
+        onChange={(event) => applyFilter(partnerFilter(event.target.value))}
+        sx={{ minWidth: 220, maxWidth: 300 }}
+      >
+        <MenuItem value="">Svi dobavljaci i objekti</MenuItem>
+        {partnerOptions}
       </TextField>
 
       {view === "list" && (
@@ -282,7 +369,7 @@ export default function OrdersPage() {
           label="Status"
           value={query.filter.status ?? ""}
           onChange={(event) => query.patchFilter({ status: event.target.value })}
-          sx={{ minWidth: 180 }}
+          sx={{ minWidth: 170 }}
         >
           <MenuItem value="">Svi statusi</MenuItem>
           {Object.entries(orderStatusLabels).map(([value, label]) => (
@@ -292,6 +379,15 @@ export default function OrdersPage() {
           ))}
         </TextField>
       )}
+
+      <DateRangeFields
+        fromLabel="Kreiran od"
+        toLabel="Kreiran do"
+        from={currentFilter.createdFrom}
+        to={currentFilter.createdTo}
+        onChange={({ from, to }) => applyFilter({ createdFrom: from, createdTo: to })}
+      />
+
       <ClearFiltersButton
         active={
           view === "kanban"
@@ -314,7 +410,7 @@ export default function OrdersPage() {
               size="small"
               exclusive
               value={view}
-              onChange={(_, next) => next && setView(next)}
+              onChange={(_, next) => switchView(next)}
             >
               <ToggleButton value="kanban">
                 <ViewKanbanIcon fontSize="small" sx={{ mr: 0.5 }} /> Tabla
@@ -373,7 +469,7 @@ export default function OrdersPage() {
             highlighted={highlighted}
             onShowAll={(status) => {
               setView("list");
-              query.patchFilter({ status });
+              query.patchFilter({ ...pickShared(kanbanFilter), status });
             }}
             onMove={(order, status) => setStatusRequest({ order, status })}
             onOpen={openDetail}

@@ -39,6 +39,7 @@ public class StockMovementFilterRequest : PagedRequest
 {
     public int? ProductId { get; set; }
     public int? LocationId { get; set; }
+    public int? StoreId { get; set; }
     public MovementType? MovementType { get; set; }
     public IssueReason? IssueReason { get; set; }
     public int? OrderId { get; set; }
