@@ -31,7 +31,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <AuthLayout>
+    <AuthLayout documentTitle="Zaboravljena lozinka">
       {sent ? (
         <Stack spacing={2.5} sx={{
           alignItems: "flex-start"

@@ -1,8 +1,13 @@
 import { Box, Paper, Stack, Typography } from "@mui/material";
+import { useEffect } from "react";
 import { ColorModeToggle } from "../../ColorMode";
 import Logo from "../common/Logo";
 
-export default function AuthLayout({ children, maxWidth = 400 }) {
+export default function AuthLayout({ children, maxWidth = 400, documentTitle }) {
+  useEffect(() => {
+    document.title = documentTitle ? `${documentTitle} · Skladisnik` : "Skladisnik";
+  }, [documentTitle]);
+
   return (
     <Box sx={{ minHeight: "100vh", display: "grid", gridTemplateColumns: { xs: "1fr", md: "1.1fr 1fr" } }}>
       <Box

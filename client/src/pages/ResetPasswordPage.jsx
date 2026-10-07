@@ -69,7 +69,7 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <AuthLayout>
+    <AuthLayout documentTitle="Nova lozinka">
       {status === "checking" && (
         <Box sx={{ display: "grid", placeItems: "center", py: 6 }}>
           <CircularProgress size={28} />

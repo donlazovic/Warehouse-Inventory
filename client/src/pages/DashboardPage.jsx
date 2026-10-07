@@ -225,6 +225,7 @@ export default function DashboardPage() {
 
   const header = (
     <PageHeader
+      documentTitle="Pocetna"
       title={`Dobrodosli, ${user?.firstName ?? ""}`}
       description={new Date().toLocaleDateString("sr-Latn-RS", {
         weekday: "long",

@@ -1,6 +1,8 @@
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import {
+  Alert,
+  Autocomplete,
   Box,
   Button,
   Divider,
@@ -16,9 +18,9 @@ import {
   Typography,
 } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
-import { ordersApi } from "../../api/endpoints";
+import { ordersApi, stockApi } from "../../api/endpoints";
 import { monoFont } from "../../theme";
-import { formatMoney } from "../../utils/format";
+import { formatMoney, formatQuantity, unitLabels } from "../../utils/format";
 import FormDialog from "../common/FormDialog";
 
 const emptyLine = { productId: "", quantity: "", unitPrice: "" };
@@ -45,6 +47,34 @@ export default function OrderFormDialog({
   const [submitting, setSubmitting] = useState(false);
 
   const isInbound = Number(orderType) === 1;
+  const [available, setAvailable] = useState({});
+
+  useEffect(() => {
+    if (!open || isInbound || sourceLocationId === "") {
+      setAvailable({});
+      return;
+    }
+
+    let active = true;
+    stockApi
+      .list({ storageLocationId: sourceLocationId, pageSize: 100 })
+      .then((result) => {
+        if (!active) return;
+        setAvailable(Object.fromEntries(result.items.map((item) => [item.productId, item.quantity])));
+      })
+      .catch(() => active && setAvailable({}));
+
+    return () => {
+      active = false;
+    };
+  }, [open, isInbound, sourceLocationId]);
+
+  const showStock = !isInbound && sourceLocationId !== "";
+  const stockOf = (productId) => available[Number(productId)] ?? 0;
+  const usedIds = new Set(lines.map((line) => Number(line.productId)).filter(Boolean));
+  const shortLines = showStock
+    ? lines.filter((line) => line.productId !== "" && Number(line.quantity) > stockOf(line.productId)).length
+    : 0;
 
   const warehouseLocations = useMemo(
     () => locations.filter((location) => location.locationType === 1),
@@ -104,6 +134,10 @@ export default function OrderFormDialog({
     );
 
   const handleProductChange = (index, productId) => {
+    if (productId === "") {
+      setLine(index, "productId", "");
+      return;
+    }
     if (lines.some((line, position) => position !== index && Number(line.productId) === Number(productId))) {
       setError("Taj proizvod je vec dodat. Povecajte kolicinu u postojecoj stavci.");
       return;
@@ -289,10 +323,22 @@ export default function OrderFormDialog({
           </Button>
         </Stack>
 
+        {shortLines > 0 && (
+          <Alert severity="warning" variant="outlined" sx={{ mb: 1.5 }}>
+            {shortLines === 1 ? "Za jednu stavku" : `Za ${shortLines} stavke`} nema dovoljno robe na izvornoj
+            lokaciji. Nalog moze da se sacuva, ali nece moci da predje u realizaciju dok se zalihe ne dopune.
+          </Alert>
+        )}
+
         <Table size="small">
           <TableHead>
             <TableRow>
               <TableCell>Proizvod</TableCell>
+              {showStock && (
+                <TableCell align="right" sx={{ width: 110 }}>
+                  Na stanju
+                </TableCell>
+              )}
               <TableCell sx={{ width: 130 }}>Kolicina</TableCell>
               <TableCell sx={{ width: 140 }}>Cena</TableCell>
               <TableCell align="right" sx={{ width: 120 }}>
@@ -305,24 +351,68 @@ export default function OrderFormDialog({
             {lines.map((line, index) => (
               <TableRow key={index}>
                 <TableCell>
-                  <TextField
-                    select
-                    value={line.productId}
-                    onChange={(event) => handleProductChange(index, event.target.value)}
-                    fullWidth
-                  >
-                    {products.map((product) => (
-                      <MenuItem key={product.id} value={product.id}>
-                        {product.sku} — {product.name}
-                      </MenuItem>
-                    ))}
-                  </TextField>
+                  <Autocomplete
+                    size="small"
+                    options={products}
+                    value={products.find((product) => product.id === Number(line.productId)) ?? null}
+                    onChange={(_, product) => handleProductChange(index, product?.id ?? "")}
+                    getOptionLabel={(product) => `${product.sku} — ${product.name}`}
+                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    getOptionDisabled={(product) => usedIds.has(product.id) && product.id !== Number(line.productId)}
+                    noOptionsText="Nema proizvoda za tu pretragu"
+                    renderOption={(props, product) => {
+                      const { key, ...rest } = props;
+                      const qty = stockOf(product.id);
+                      return (
+                        <Box component="li" key={key} {...rest} sx={{ display: "flex", gap: 2 }}>
+                          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                            <Typography variant="body2" noWrap>
+                              {product.name}
+                            </Typography>
+                            <Typography sx={{ fontFamily: monoFont, fontSize: "0.72rem", color: "text.secondary" }}>
+                              {product.sku}
+                              {usedIds.has(product.id) && product.id !== Number(line.productId) ? " · vec dodat" : ""}
+                            </Typography>
+                          </Box>
+                          {showStock && (
+                            <Typography
+                              sx={{
+                                fontFamily: monoFont,
+                                fontSize: "0.75rem",
+                                whiteSpace: "nowrap",
+                                color: qty > 0 ? "text.secondary" : "error.main",
+                              }}
+                            >
+                              {formatQuantity(qty)} {unitLabels[product.unitOfMeasure]}
+                            </Typography>
+                          )}
+                        </Box>
+                      );
+                    }}
+                    renderInput={(params) => <TextField {...params} placeholder="Pretrazi po nazivu ili SKU" />}
+                    sx={{ minWidth: 240 }}
+                  />
                 </TableCell>
+                {showStock && (
+                  <TableCell align="right" sx={{ fontFamily: monoFont, fontSize: "0.8rem", whiteSpace: "nowrap" }}>
+                    {line.productId === "" ? (
+                      "—"
+                    ) : (
+                      <Box
+                        component="span"
+                        sx={{ color: Number(line.quantity) > stockOf(line.productId) ? "error.main" : "text.secondary" }}
+                      >
+                        {formatQuantity(stockOf(line.productId))}
+                      </Box>
+                    )}
+                  </TableCell>
+                )}
                 <TableCell>
                   <TextField
                     type="number"
                     value={line.quantity}
                     onChange={(event) => setLine(index, "quantity", event.target.value)}
+                    error={showStock && line.productId !== "" && Number(line.quantity) > stockOf(line.productId)}
                     fullWidth
                   />
                 </TableCell>

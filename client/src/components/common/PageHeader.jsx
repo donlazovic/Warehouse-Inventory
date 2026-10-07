@@ -1,6 +1,13 @@
 import { Box, Stack, Typography } from "@mui/material";
+import { useEffect } from "react";
 
-export default function PageHeader({ title, description, actions }) {
+export default function PageHeader({ title, description, actions, documentTitle }) {
+  const tabTitle = documentTitle ?? title;
+
+  useEffect(() => {
+    document.title = tabTitle ? `${tabTitle} · Skladisnik` : "Skladisnik";
+  }, [tabTitle]);
+
   return (
     <Stack
       direction={{ xs: "column", sm: "row" }}

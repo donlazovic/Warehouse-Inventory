@@ -25,6 +25,7 @@ import { categoriesApi, exportParams, exportsApi, locationsApi, productsApi, sto
 import { useAuth } from "../auth/AuthContext";
 import ClearFiltersButton from "../components/common/ClearFiltersButton";
 import DataTable from "../components/common/DataTable";
+import SearchField from "../components/common/SearchField";
 import ExportMenu from "../components/common/ExportMenu";
 import PageHeader from "../components/common/PageHeader";
 import { useToast } from "../components/common/Toast";
@@ -292,11 +293,11 @@ export default function StockPage() {
         <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{
           alignItems: { md: "center" }
         }}>
-          <TextField
+          <SearchField
             label="Pretraga po nazivu ili SKU"
-            value={query.filter.search ?? ""}
-            onChange={(e) => query.patchFilter({ search: e.target.value })}
-            sx={{ minWidth: 240 }}
+            value={query.filter.search}
+            onSearch={(value) => query.patchFilter({ search: value })}
+            sx={{minWidth: 240 }}
           />
           <TextField
             select

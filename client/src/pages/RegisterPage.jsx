@@ -62,7 +62,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <AuthLayout maxWidth={440}>
+    <AuthLayout documentTitle="Zahtev za pristup" maxWidth={440}>
       <form onSubmit={handleSubmit}>
         <Typography variant="h2" gutterBottom>
           Zahtev za pristup

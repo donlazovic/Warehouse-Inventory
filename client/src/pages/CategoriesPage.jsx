@@ -5,6 +5,7 @@ import { useAuth } from "../auth/AuthContext";
 import ConfirmDialog from "../components/common/ConfirmDialog";
 import ClearFiltersButton from "../components/common/ClearFiltersButton";
 import DataTable from "../components/common/DataTable";
+import SearchField from "../components/common/SearchField";
 import PageHeader from "../components/common/PageHeader";
 import RowActions from "../components/common/RowActions";
 import CategoryFormDialog from "../components/forms/CategoryFormDialog";
@@ -84,11 +85,11 @@ export default function CategoriesPage() {
 
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
         <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-          <TextField
+          <SearchField
             label="Pretraga"
-            value={query.filter.search ?? ""}
-            onChange={(event) => query.patchFilter({ search: event.target.value })}
-            sx={{ minWidth: 260 }}
+            value={query.filter.search}
+            onSearch={(value) => query.patchFilter({ search: value })}
+            sx={{minWidth: 260 }}
           />
           <TextField
             select

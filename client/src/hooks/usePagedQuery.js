@@ -11,9 +11,11 @@ export default function usePagedQuery(fetcher, initialFilter = {}) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const requestId = useRef(0);
   const defaultSort = useRef({ sortBy: initialFilter.sortBy, sortDesc: initialFilter.sortDesc });
 
   const load = useCallback(async () => {
+    const current = ++requestId.current;
     setLoading(true);
     setError(null);
 
@@ -21,12 +23,14 @@ export default function usePagedQuery(fetcher, initialFilter = {}) {
       const cleaned = Object.fromEntries(
         Object.entries(filter).filter(([, value]) => value !== "" && value != null)
       );
-      setData(await fetcher(cleaned));
+      const result = await fetcher(cleaned);
+      if (current === requestId.current) setData(result);
     } catch (err) {
+      if (current !== requestId.current) return;
       setError(err.message);
       setData({ items: [], totalCount: 0 });
     } finally {
-      setLoading(false);
+      if (current === requestId.current) setLoading(false);
     }
   }, [fetcher, filter]);
 

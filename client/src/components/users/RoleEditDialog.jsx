@@ -10,6 +10,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import ConfirmDialog from "../common/ConfirmDialog";
 import DialogHeader from "../common/DialogHeader";
 import { useEffect, useMemo, useState } from "react";
 import { rolesApi } from "../../api/endpoints";
@@ -21,6 +22,7 @@ export default function RoleEditDialog({ roleId, tree, onClose, onSaved }) {
   const [description, setDescription] = useState("");
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (!roleId) return;
@@ -67,8 +69,14 @@ export default function RoleEditDialog({ roleId, tree, onClose, onSaved }) {
     }
   };
 
+  const requestClose = () => {
+    if (saving) return;
+    if (changed > 0 && !readOnly) setConfirmOpen(true);
+    else onClose();
+  };
+
   return (
-    <Dialog open={Boolean(roleId)} onClose={saving ? undefined : onClose} maxWidth="md" fullWidth>
+    <Dialog open={Boolean(roleId)} onClose={requestClose} maxWidth="md" fullWidth>
       <DialogHeader
         title={detail ? `Uloga: ${detail.role.name}` : "Uloga"}
         subtitle={
@@ -76,7 +84,7 @@ export default function RoleEditDialog({ roleId, tree, onClose, onSaved }) {
             ? `${detail.role.userCount} ${detail.role.userCount === 1 ? "korisnik" : "korisnika"} · ${selected.size} od ${totalLeaves} dozvola`
             : null
         }
-        onClose={onClose}
+        onClose={requestClose}
         disabled={saving}
       />
 
@@ -123,7 +131,7 @@ export default function RoleEditDialog({ roleId, tree, onClose, onSaved }) {
           {changed > 0 ? `${changed} ${changed === 1 ? "izmena" : "izmena"} nije sacuvano` : ""}
         </Typography>
         <Stack direction="row" spacing={1}>
-          <Button onClick={onClose} disabled={saving}>
+          <Button onClick={requestClose} disabled={saving}>
             {readOnly ? "Zatvori" : "Odustani"}
           </Button>
           {!readOnly && (
@@ -133,6 +141,20 @@ export default function RoleEditDialog({ roleId, tree, onClose, onSaved }) {
           )}
         </Stack>
       </DialogActions>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Odbaciti izmene dozvola?"
+        message={`Imate ${changed} nesacuvanih izmena. Ako zatvorite prozor, bice izgubljene.`}
+        confirmLabel="Odbaci izmene"
+        cancelLabel="Nastavi uredjivanje"
+        destructive
+        onConfirm={() => {
+          setConfirmOpen(false);
+          onClose();
+        }}
+        onClose={() => setConfirmOpen(false)}
+      />
     </Dialog>
   );
 }

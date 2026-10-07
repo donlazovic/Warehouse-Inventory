@@ -25,6 +25,7 @@ import { useAuth } from "../auth/AuthContext";
 import ConfirmDialog from "../components/common/ConfirmDialog";
 import ClearFiltersButton from "../components/common/ClearFiltersButton";
 import DataTable from "../components/common/DataTable";
+import SearchField from "../components/common/SearchField";
 import PageHeader from "../components/common/PageHeader";
 import { useToast } from "../components/common/Toast";
 import ApproveUserDialog from "../components/users/ApproveUserDialog";
@@ -381,12 +382,12 @@ export default function UsersPage() {
             <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{
               alignItems: { md: "center" }
             }}>
-              <TextField
-                label="Pretraga po imenu ili email-u"
-                value={query.filter.search ?? ""}
-                onChange={(event) => query.patchFilter({ search: event.target.value })}
-                sx={{ minWidth: 260 }}
-              />
+              <SearchField
+            label="Pretraga po imenu ili email-u"
+            value={query.filter.search}
+            onSearch={(value) => query.patchFilter({ search: value })}
+            sx={{minWidth: 260 }}
+          />
               <TextField
                 select
                 label="Uloga"

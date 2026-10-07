@@ -1,7 +1,12 @@
 import { Box, Button, Typography } from "@mui/material";
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 
 export default function NotFoundPage() {
+  useEffect(() => {
+    document.title = "Stranica ne postoji · Skladisnik";
+  }, []);
+
   return (
     <Box sx={{ py: 8, maxWidth: "52ch" }}>
       <Typography variant="h1" gutterBottom>

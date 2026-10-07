@@ -5,6 +5,7 @@ import { exportParams, exportsApi, locationsApi, stockApi } from "../api/endpoin
 import { useAuth } from "../auth/AuthContext";
 import ClearFiltersButton from "../components/common/ClearFiltersButton";
 import DataTable from "../components/common/DataTable";
+import SearchField from "../components/common/SearchField";
 import ExportMenu from "../components/common/ExportMenu";
 import PageHeader from "../components/common/PageHeader";
 import usePagedQuery from "../hooks/usePagedQuery";
@@ -183,11 +184,11 @@ export default function MovementsPage() {
 
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
         <Stack direction={{ xs: "column", lg: "row" }} spacing={2}>
-          <TextField
+          <SearchField
             label="Proizvod, SKU ili broj naloga"
-            value={query.filter.search ?? ""}
-            onChange={(e) => query.patchFilter({ search: e.target.value })}
-            sx={{ minWidth: 240 }}
+            value={query.filter.search}
+            onSearch={(value) => query.patchFilter({ search: value })}
+            sx={{minWidth: 240 }}
           />
           <TextField
             select

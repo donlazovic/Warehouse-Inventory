@@ -26,6 +26,7 @@ import {
 import { useAuth } from "../auth/AuthContext";
 import ClearFiltersButton from "../components/common/ClearFiltersButton";
 import DataTable from "../components/common/DataTable";
+import SearchField from "../components/common/SearchField";
 import ExportMenu from "../components/common/ExportMenu";
 import PageHeader from "../components/common/PageHeader";
 import { useToast } from "../components/common/Toast";
@@ -249,15 +250,15 @@ export default function OrdersPage() {
 
   const filterControls = (
     <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-      <TextField
+      <SearchField
         label="Pretraga po broju naloga"
-        value={(view === "kanban" ? kanbanFilter.search : query.filter.search) ?? ""}
-        onChange={(event) =>
+        value={view === "kanban" ? kanbanFilter.search : query.filter.search}
+        onSearch={(value) =>
           view === "kanban"
-            ? setKanbanFilter((current) => ({ ...current, search: event.target.value }))
-            : query.patchFilter({ search: event.target.value })
+            ? setKanbanFilter((current) => ({ ...current, search: value }))
+            : query.patchFilter({ search: value })
         }
-        sx={{ minWidth: 240 }}
+        sx={{minWidth: 240 }}
       />
       <TextField
         select

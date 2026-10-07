@@ -53,7 +53,7 @@ export default function LoginPage() {
   };
 
   return (
-    <AuthLayout>
+    <AuthLayout documentTitle="Prijava">
       <form onSubmit={handleSubmit}>
         <Typography variant="h2" gutterBottom>
           Prijava
