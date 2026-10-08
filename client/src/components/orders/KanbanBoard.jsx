@@ -78,7 +78,7 @@ export default function KanbanBoard({
   };
 
   const canDropOn = (status) =>
-    dragged ? Boolean(allowedTransitions[dragged.status]?.includes(status) && canMoveTo(status)) : false;
+    dragged ? Boolean(allowedTransitions[dragged.status]?.includes(status) && canMoveTo(status, dragged.status)) : false;
 
   const dropProps = (status) => ({
     onDragOver: (event) => {

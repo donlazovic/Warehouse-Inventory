@@ -49,22 +49,17 @@ public class StoreService : IStoreService
     public async Task<StoreDto> CreateAsync(SaveStoreRequest request, CancellationToken ct = default)
     {
         var repo = _uow.Repository<Store>();
-        var code = request.Code.Trim().ToUpperInvariant();
+        var data = Validate(request);
 
-        if (await repo.ExistsAsync(x => x.Code == code, ct))
+        if (await repo.ExistsAsync(x => x.Code == data.Code, ct))
             throw new AppException("Prodajni objekat sa istom sifrom vec postoji.");
 
-        var store = new Store
-        {
-            Code = code,
-            Name = request.Name.Trim(),
-            ManagerName = request.ManagerName?.Trim(),
-            Email = request.Email?.Trim(),
-            Phone = request.Phone?.Trim(),
-            Address = request.Address?.Trim(),
-            City = request.City?.Trim(),
-            IsActive = request.IsActive
-        };
+        if (await _uow.Repository<StorageLocation>().ExistsAsync(x => x.Code == data.Code + "-MAIN", ct))
+            throw new AppException($"Lokacija {data.Code}-MAIN vec postoji. Izaberite drugu sifru objekta.");
+
+        var store = new Store { IsActive = request.IsActive };
+        Apply(store, data);
+        var code = store.Code;
 
         await repo.AddAsync(store, ct);
         await _uow.SaveChangesAsync(ct);
@@ -86,21 +81,15 @@ public class StoreService : IStoreService
     public async Task<StoreDto> UpdateAsync(int id, SaveStoreRequest request, CancellationToken ct = default)
     {
         var repo = _uow.Repository<Store>();
-        var code = request.Code.Trim().ToUpperInvariant();
+        var data = Validate(request);
 
         var store = await repo.Query(asNoTracking: false).FirstOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new AppException("Prodajni objekat nije pronadjen.", 404);
 
-        if (await repo.ExistsAsync(x => x.Code == code && x.Id != id, ct))
+        if (await repo.ExistsAsync(x => x.Code == data.Code && x.Id != id, ct))
             throw new AppException("Prodajni objekat sa istom sifrom vec postoji.");
 
-        store.Code = code;
-        store.Name = request.Name.Trim();
-        store.ManagerName = request.ManagerName?.Trim();
-        store.Email = request.Email?.Trim();
-        store.Phone = request.Phone?.Trim();
-        store.Address = request.Address?.Trim();
-        store.City = request.City?.Trim();
+        Apply(store, data);
         store.IsActive = request.IsActive;
 
         repo.Update(store);
@@ -125,16 +114,54 @@ public class StoreService : IStoreService
         if (hasStock)
             throw new AppException("Objekat se ne moze obrisati jer na njegovim lokacijama postoje zalihe.");
 
+        var hasMovements = await _uow.Repository<StockMovement>().ExistsAsync(
+            x => (x.FromLocation != null && x.FromLocation.StoreId == id)
+              || (x.ToLocation != null && x.ToLocation.StoreId == id), ct);
+
+        if (hasMovements)
+            throw new AppException("Objekat se ne moze obrisati jer postoji istorija kretanja robe na njegovim lokacijama. Deaktivirajte ga umesto toga.");
+
         var locations = await _uow.Repository<StorageLocation>()
             .Query(asNoTracking: false)
             .Where(x => x.StoreId == id)
             .ToListAsync(ct);
+
+        // Prazne stavke zaliha bez istorije ne smeju da blokiraju brisanje lokacija.
+        var emptyStock = await _uow.Repository<StockItem>()
+            .Query(asNoTracking: false)
+            .Where(x => x.StorageLocation.StoreId == id)
+            .ToListAsync(ct);
+
+        foreach (var item in emptyStock)
+            _uow.Repository<StockItem>().Remove(item);
 
         foreach (var location in locations)
             _uow.Repository<StorageLocation>().Remove(location);
 
         repo.Remove(store);
         await _uow.SaveChangesAsync(ct);
+    }
+
+    private static Store Validate(SaveStoreRequest request) => new()
+    {
+        Code = Guard.Code(request.Code, "Sifra", 15),
+        Name = Guard.Required(request.Name, "Naziv", 200),
+        ManagerName = Guard.Optional(request.ManagerName, "Odgovorno lice", 150),
+        Email = Guard.Email(request.Email),
+        Phone = Guard.Optional(request.Phone, "Telefon", 50),
+        Address = Guard.Optional(request.Address, "Adresa", 300),
+        City = Guard.Optional(request.City, "Grad", 100)
+    };
+
+    private static void Apply(Store target, Store data)
+    {
+        target.Code = data.Code;
+        target.Name = data.Name;
+        target.ManagerName = data.ManagerName;
+        target.Email = data.Email;
+        target.Phone = data.Phone;
+        target.Address = data.Address;
+        target.City = data.City;
     }
 
     private static IQueryable<StoreDto> Project(IQueryable<Store> query)

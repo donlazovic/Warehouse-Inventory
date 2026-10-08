@@ -107,7 +107,7 @@ public class RoleService : IRoleService
             });
         }
 
-        role.Description = request.Description?.Trim();
+        role.Description = Guard.Optional(request.Description, "Opis", 250);
 
         repo.Update(role);
         await _uow.SaveChangesAsync(ct);

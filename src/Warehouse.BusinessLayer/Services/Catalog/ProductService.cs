@@ -3,6 +3,7 @@ using Warehouse.BusinessLayer.Common;
 using Warehouse.BusinessLayer.DTOs.Catalog;
 using Warehouse.DataLayer.Repositories;
 using Warehouse.Domain.Entities.Catalog;
+using Warehouse.Domain.Enums;
 
 namespace Warehouse.BusinessLayer.Services.Catalog;
 
@@ -126,19 +127,22 @@ public class ProductService : IProductService
     {
         var repo = _uow.Repository<Product>();
 
-        ValidateStockLimits(request.MinStock, request.MaxStock);
+        var sku = Guard.Required(request.Sku, "SKU", 50);
+        var name = Guard.Required(request.Name, "Naziv", 200);
+        var description = Guard.Optional(request.Description, "Opis", 1000);
+        ValidateValues(request.UnitOfMeasure, request.Price, request.MinStock, request.MaxStock);
 
-        if (await repo.ExistsAsync(x => x.Sku == request.Sku, ct))
+        if (await repo.ExistsAsync(x => x.Sku == sku, ct))
             throw new AppException("Proizvod sa istim SKU kodom vec postoji.");
 
-        if (!await _uow.Repository<Category>().ExistsAsync(x => x.Id == request.CategoryId, ct))
-            throw new AppException("Kategorija ne postoji.");
+        if (!await _uow.Repository<Category>().ExistsAsync(x => x.Id == request.CategoryId && x.IsActive, ct))
+            throw new AppException("Kategorija ne postoji ili je deaktivirana.");
 
         var product = new Product
         {
-            Sku = request.Sku.Trim(),
-            Name = request.Name.Trim(),
-            Description = request.Description?.Trim(),
+            Sku = sku,
+            Name = name,
+            Description = description,
             UnitOfMeasure = request.UnitOfMeasure,
             Price = request.Price,
             MinStock = request.MinStock,
@@ -160,17 +164,24 @@ public class ProductService : IProductService
         var product = await repo.Query(asNoTracking: false).FirstOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new AppException("Proizvod nije pronadjen.", 404);
 
-        ValidateStockLimits(request.MinStock, request.MaxStock);
+        var sku = Guard.Required(request.Sku, "SKU", 50);
+        var name = Guard.Required(request.Name, "Naziv", 200);
+        var description = Guard.Optional(request.Description, "Opis", 1000);
+        ValidateValues(request.UnitOfMeasure, request.Price, request.MinStock, request.MaxStock);
 
-        if (await repo.ExistsAsync(x => x.Sku == request.Sku && x.Id != id, ct))
+        if (await repo.ExistsAsync(x => x.Sku == sku && x.Id != id, ct))
             throw new AppException("Proizvod sa istim SKU kodom vec postoji.");
 
-        if (!await _uow.Repository<Category>().ExistsAsync(x => x.Id == request.CategoryId, ct))
-            throw new AppException("Kategorija ne postoji.");
+        var categoryOk = request.CategoryId == product.CategoryId
+            ? await _uow.Repository<Category>().ExistsAsync(x => x.Id == request.CategoryId, ct)
+            : await _uow.Repository<Category>().ExistsAsync(x => x.Id == request.CategoryId && x.IsActive, ct);
 
-        product.Sku = request.Sku.Trim();
-        product.Name = request.Name.Trim();
-        product.Description = request.Description?.Trim();
+        if (!categoryOk)
+            throw new AppException("Kategorija ne postoji ili je deaktivirana.");
+
+        product.Sku = sku;
+        product.Name = name;
+        product.Description = description;
         product.UnitOfMeasure = request.UnitOfMeasure;
         product.Price = request.Price;
         product.MinStock = request.MinStock;
@@ -202,6 +213,20 @@ public class ProductService : IProductService
 
         if (usedInOrders)
             throw new AppException("Proizvod se ne moze obrisati jer se koristi u nalozima. Deaktivirajte ga umesto toga.");
+
+        var hasMovements = await _uow.Repository<Domain.Entities.Inventory.StockMovement>()
+            .ExistsAsync(x => x.ProductId == id, ct);
+
+        if (hasMovements)
+            throw new AppException("Proizvod se ne moze obrisati jer postoji istorija kretanja robe. Deaktivirajte ga umesto toga.");
+
+        var emptyStock = await _uow.Repository<Domain.Entities.Inventory.StockItem>()
+            .Query(asNoTracking: false)
+            .Where(x => x.ProductId == id)
+            .ToListAsync(ct);
+
+        foreach (var item in emptyStock)
+            _uow.Repository<Domain.Entities.Inventory.StockItem>().Remove(item);
 
         repo.Remove(product);
         await _uow.SaveChangesAsync(ct);
@@ -258,6 +283,13 @@ public class ProductService : IProductService
             query = query.Where(x => x.CreatedAt <= to);
 
         return query;
+    }
+
+    private static void ValidateValues(UnitOfMeasure unit, decimal price, decimal min, decimal max)
+    {
+        Guard.Defined(unit, "Jedinica mere");
+        Guard.Money(price, "Cena");
+        ValidateStockLimits(min, max);
     }
 
     private static void ValidateStockLimits(decimal min, decimal max)

@@ -20,10 +20,11 @@ public static class OrderStatusRules
     public static bool CanTransition(OrderStatus from, OrderStatus to)
         => AllowedNext(from).Contains(to);
 
-    public static string RequiredPermission(OrderStatus to) => to switch
+    public static string RequiredPermission(OrderStatus from, OrderStatus to) => to switch
     {
         OrderStatus.Approved => "orders.approve",
         OrderStatus.Completed => "orders.execute",
+        OrderStatus.Cancelled when from is OrderStatus.Approved or OrderStatus.InProgress => "orders.approve",
         _ => "orders.update"
     };
 

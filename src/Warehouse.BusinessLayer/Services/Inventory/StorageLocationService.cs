@@ -54,7 +54,10 @@ public class StorageLocationService : IStorageLocationService
     public async Task<StorageLocationDto> CreateAsync(SaveStorageLocationRequest request, CancellationToken ct = default)
     {
         var repo = _uow.Repository<StorageLocation>();
-        var code = request.Code.Trim().ToUpperInvariant();
+        var code = Guard.Code(request.Code, "Sifra", 20);
+        var name = Guard.Required(request.Name, "Naziv", 150);
+        var zone = Guard.Optional(request.Zone, "Zona", 50);
+        Guard.Defined(request.LocationType, "Tip lokacije");
 
         if (await repo.ExistsAsync(x => x.Code == code, ct))
             throw new AppException("Lokacija sa istom sifrom vec postoji.");
@@ -64,8 +67,8 @@ public class StorageLocationService : IStorageLocationService
         var location = new StorageLocation
         {
             Code = code,
-            Name = request.Name.Trim(),
-            Zone = request.Zone?.Trim(),
+            Name = name,
+            Zone = zone,
             LocationType = request.LocationType,
             StoreId = storeId,
             IsActive = request.IsActive
@@ -80,7 +83,10 @@ public class StorageLocationService : IStorageLocationService
     public async Task<StorageLocationDto> UpdateAsync(int id, SaveStorageLocationRequest request, CancellationToken ct = default)
     {
         var repo = _uow.Repository<StorageLocation>();
-        var code = request.Code.Trim().ToUpperInvariant();
+        var code = Guard.Code(request.Code, "Sifra", 20);
+        var name = Guard.Required(request.Name, "Naziv", 150);
+        var zone = Guard.Optional(request.Zone, "Zona", 50);
+        Guard.Defined(request.LocationType, "Tip lokacije");
 
         var location = await repo.Query(asNoTracking: false).FirstOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new AppException("Lokacija nije pronadjena.", 404);
@@ -90,9 +96,23 @@ public class StorageLocationService : IStorageLocationService
 
         var storeId = await ValidateStoreAsync(request, ct);
 
+        var hasStock = await _uow.Repository<StockItem>().ExistsAsync(x => x.StorageLocationId == id && x.Quantity != 0, ct);
+
+        if (location.LocationType != request.LocationType || location.StoreId != storeId)
+        {
+            var hasHistory = hasStock || await _uow.Repository<StockMovement>()
+                .ExistsAsync(x => x.FromLocationId == id || x.ToLocationId == id, ct);
+
+            if (hasHistory)
+                throw new AppException("Tip lokacije i objekat se ne mogu menjati jer lokacija ima zalihe ili istoriju kretanja.");
+        }
+
+        if (location.IsActive && !request.IsActive && hasStock)
+            throw new AppException("Lokacija se ne moze deaktivirati dok na njoj ima robe. Premestite ili otpisite zalihe.");
+
         location.Code = code;
-        location.Name = request.Name.Trim();
-        location.Zone = request.Zone?.Trim();
+        location.Name = name;
+        location.Zone = zone;
         location.LocationType = request.LocationType;
         location.StoreId = storeId;
         location.IsActive = request.IsActive;

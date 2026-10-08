@@ -36,14 +36,16 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponse> LoginAsync(LoginRequest request, string? ip, CancellationToken ct = default)
     {
+        var email = request.Email?.Trim().ToLowerInvariant() ?? string.Empty;
+
         var user = await _uow.Repository<User>()
             .Query()
             .Include(x => x.Role)
                 .ThenInclude(r => r.RolePermissions)
                     .ThenInclude(rp => rp.Permission)
-            .FirstOrDefaultAsync(x => x.Email == request.Email, ct);
+            .FirstOrDefaultAsync(x => x.Email == email, ct);
 
-        if (user is null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+        if (user is null || !BCrypt.Net.BCrypt.Verify(request.Password ?? string.Empty, user.PasswordHash))
             throw new AppException("Pogresan email ili lozinka.", 401);
 
         if (user.ApprovedAt is null)

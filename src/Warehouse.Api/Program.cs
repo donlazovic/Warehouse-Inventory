@@ -69,23 +69,45 @@ builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProv
 builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 builder.Services.AddAuthorization();
 
+static string ClientIp(HttpContext context)
+    => context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+static string UserOrIp(HttpContext context)
+    => context.User.FindFirst(AppClaimTypes.UserId)?.Value is { } userId
+        ? $"user:{userId}"
+        : $"ip:{ClientIp(context)}";
+
+static FixedWindowRateLimiterOptions PerMinute(int permits) => new()
+{
+    PermitLimit = permits,
+    Window = TimeSpan.FromMinutes(1),
+    QueueLimit = 0
+};
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
-    options.AddFixedWindowLimiter("auth", opt =>
-    {
-        opt.PermitLimit = 5;
-        opt.Window = TimeSpan.FromMinutes(1);
-        opt.QueueLimit = 0;
-    });
+    options.AddPolicy("auth", context =>
+        RateLimitPartition.GetFixedWindowLimiter(ClientIp(context), _ => PerMinute(10)));
 
-    options.AddFixedWindowLimiter("export", opt =>
+    options.AddPolicy("refresh", context =>
+        RateLimitPartition.GetFixedWindowLimiter(ClientIp(context), _ => PerMinute(60)));
+
+    options.AddPolicy("export", context =>
+        RateLimitPartition.GetFixedWindowLimiter(UserOrIp(context), _ => PerMinute(10)));
+
+    options.OnRejected = async (context, ct) =>
     {
-        opt.PermitLimit = 10;
-        opt.Window = TimeSpan.FromMinutes(1);
-        opt.QueueLimit = 0;
-    });
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+            context.HttpContext.Response.Headers.RetryAfter = ((int)Math.Ceiling(retryAfter.TotalSeconds)).ToString();
+
+        await context.HttpContext.Response.WriteAsJsonAsync(new
+        {
+            statusCode = StatusCodes.Status429TooManyRequests,
+            message = "Previse zahteva u kratkom roku. Sacekajte minut pa pokusajte ponovo."
+        }, ct);
+    };
 });
 
 builder.Services.AddCors(options =>
@@ -141,8 +163,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseCors("client");
-app.UseRateLimiter();
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHub<LiveHub>("/hubs/live");

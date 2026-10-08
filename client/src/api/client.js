@@ -22,7 +22,10 @@ export const tokenStore = {
   },
 };
 
-const api = axios.create({ baseURL, headers: { "Content-Type": "application/json" } });
+const api = axios.create({
+  baseURL,
+  headers: { "Content-Type": "application/json" },
+});
 
 api.interceptors.request.use((config) => {
   const token = tokenStore.access;
@@ -43,7 +46,11 @@ api.interceptors.response.use(
     const original = error.config;
     const status = error.response?.status;
 
-    if (status !== 401 || original?._retried || original?.url?.includes("/auth/")) {
+    if (
+      status !== 401 ||
+      original?._retried ||
+      original?.url?.includes("/auth/")
+    ) {
       return Promise.reject(normalizeError(error));
     }
 
@@ -63,22 +70,29 @@ api.interceptors.response.use(
       const newToken = await refreshing;
       original.headers.Authorization = `Bearer ${newToken}`;
       return api(original);
-    } catch {
-      tokenStore.clear();
-      onSessionExpired();
-      return Promise.reject(normalizeError(error));
+    } catch (refreshError) {
+      const refreshStatus = refreshError.response?.status;
+      if ([400, 401, 403].includes(refreshStatus)) {
+        tokenStore.clear();
+        onSessionExpired();
+      }
+      return Promise.reject(
+        normalizeError(refreshStatus ? refreshError : error),
+      );
     }
-  }
+  },
 );
 
 function normalizeError(error) {
   const message =
     error.response?.data?.message ??
-    (error.response?.status === 403
-      ? "Nemate dozvolu za ovu akciju."
-      : error.response?.status === 404
-      ? "Trazeni podatak ne postoji."
-      : "Server nije dostupan. Proverite da li API radi.");
+    (error.response?.status === 429
+      ? "Previse zahteva u kratkom roku. Sacekajte minut pa pokusajte ponovo."
+      : error.response?.status === 403
+        ? "Nemate dozvolu za ovu akciju."
+        : error.response?.status === 404
+          ? "Trazeni podatak ne postoji."
+          : "Server nije dostupan. Proverite da li API radi.");
 
   return Object.assign(error, { message });
 }

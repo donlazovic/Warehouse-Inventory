@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Warehouse.Api.Authorization;
 using Warehouse.Api.Extensions;
@@ -54,14 +55,8 @@ public class OrdersController : ControllerBase
     }
 
     [HttpPatch("{id:int}/status")]
+    [Authorize]
     public async Task<ActionResult<OrderDetailDto>> ChangeStatus(
         int id, ChangeOrderStatusRequest request, CancellationToken ct)
-    {
-        var required = OrderStatusRules.RequiredPermission(request.Status);
-
-        if (!User.HasPermission(required))
-            return Forbid();
-
-        return Ok(await _service.ChangeStatusAsync(id, request, User.GetUserId(), ct));
-    }
+        => Ok(await _service.ChangeStatusAsync(id, request, User.GetUserId(), User.HasPermission, ct));
 }

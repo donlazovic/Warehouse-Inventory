@@ -50,20 +50,13 @@ public class SupplierService : ISupplierService
     {
         var repo = _uow.Repository<Supplier>();
 
-        if (await repo.ExistsAsync(x => x.Name == request.Name, ct))
+        var data = Validate(request);
+
+        if (await repo.ExistsAsync(x => x.Name == data.Name, ct))
             throw new AppException("Dobavljac sa istim nazivom vec postoji.");
 
-        var supplier = new Supplier
-        {
-            Name = request.Name.Trim(),
-            TaxNumber = request.TaxNumber?.Trim(),
-            ContactPerson = request.ContactPerson?.Trim(),
-            Email = request.Email?.Trim(),
-            Phone = request.Phone?.Trim(),
-            Address = request.Address?.Trim(),
-            City = request.City?.Trim(),
-            IsActive = request.IsActive
-        };
+        var supplier = new Supplier { IsActive = request.IsActive };
+        Apply(supplier, data);
 
         await repo.AddAsync(supplier, ct);
         await _uow.SaveChangesAsync(ct);
@@ -78,16 +71,12 @@ public class SupplierService : ISupplierService
         var supplier = await repo.Query(asNoTracking: false).FirstOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new AppException("Dobavljac nije pronadjen.", 404);
 
-        if (await repo.ExistsAsync(x => x.Name == request.Name && x.Id != id, ct))
+        var data = Validate(request);
+
+        if (await repo.ExistsAsync(x => x.Name == data.Name && x.Id != id, ct))
             throw new AppException("Dobavljac sa istim nazivom vec postoji.");
 
-        supplier.Name = request.Name.Trim();
-        supplier.TaxNumber = request.TaxNumber?.Trim();
-        supplier.ContactPerson = request.ContactPerson?.Trim();
-        supplier.Email = request.Email?.Trim();
-        supplier.Phone = request.Phone?.Trim();
-        supplier.Address = request.Address?.Trim();
-        supplier.City = request.City?.Trim();
+        Apply(supplier, data);
         supplier.IsActive = request.IsActive;
 
         repo.Update(supplier);
@@ -108,6 +97,36 @@ public class SupplierService : ISupplierService
 
         repo.Remove(supplier);
         await _uow.SaveChangesAsync(ct);
+    }
+
+    private static Supplier Validate(SaveSupplierRequest request)
+    {
+        var taxNumber = Guard.Optional(request.TaxNumber, "PIB", 20);
+
+        if (taxNumber is not null && (taxNumber.Length != 9 || !taxNumber.All(char.IsDigit)))
+            throw new AppException("PIB mora imati tacno 9 cifara.");
+
+        return new Supplier
+        {
+            Name = Guard.Required(request.Name, "Naziv", 200),
+            TaxNumber = taxNumber,
+            ContactPerson = Guard.Optional(request.ContactPerson, "Kontakt osoba", 150),
+            Email = Guard.Email(request.Email),
+            Phone = Guard.Optional(request.Phone, "Telefon", 50),
+            Address = Guard.Optional(request.Address, "Adresa", 300),
+            City = Guard.Optional(request.City, "Grad", 100)
+        };
+    }
+
+    private static void Apply(Supplier target, Supplier data)
+    {
+        target.Name = data.Name;
+        target.TaxNumber = data.TaxNumber;
+        target.ContactPerson = data.ContactPerson;
+        target.Email = data.Email;
+        target.Phone = data.Phone;
+        target.Address = data.Address;
+        target.City = data.City;
     }
 
     private static IQueryable<SupplierDto> Project(IQueryable<Supplier> query)

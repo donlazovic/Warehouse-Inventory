@@ -3,11 +3,12 @@ import SearchIcon from "@mui/icons-material/Search";
 import { IconButton, InputAdornment, TextField } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 
-/**
- * Polje za pretragu koje salje upit tek kad korisnik prestane da kuca,
- * umesto na svako slovo.
- */
-export default function SearchField({ value, onSearch, delay = 300, ...props }) {
+export default function SearchField({
+  value,
+  onSearch,
+  delay = 300,
+  ...props
+}) {
   const [text, setText] = useState(value ?? "");
   const sent = useRef(value ?? "");
   const latestOnSearch = useRef(onSearch);
@@ -55,7 +56,12 @@ export default function SearchField({ value, onSearch, delay = 300, ...props }) 
           ),
           endAdornment: text ? (
             <InputAdornment position="end">
-              <IconButton size="small" edge="end" onClick={clear} aria-label="Obrisi pretragu">
+              <IconButton
+                size="small"
+                edge="end"
+                onClick={clear}
+                aria-label="Obrisi pretragu"
+              >
                 <CloseIcon fontSize="small" />
               </IconButton>
             </InputAdornment>

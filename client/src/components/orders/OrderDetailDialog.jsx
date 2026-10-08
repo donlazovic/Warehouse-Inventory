@@ -182,7 +182,7 @@ export default function OrderDetailDialog({ detail, canMoveTo, onChangeStatus, o
         <Stack direction="row" spacing={1}>
           <Button onClick={onClose}>Zatvori</Button>
           {allowedNextStatuses
-            .filter((status) => canMoveTo(status))
+            .filter((status) => canMoveTo(status, order.status))
             .map((status) => (
               <Button
                 key={status}

@@ -109,6 +109,8 @@ public class OrderService : IOrderService
 
     public async Task<OrderDetailDto> CreateAsync(CreateOrderRequest request, int currentUserId, CancellationToken ct = default)
     {
+        Guard.Defined(request.OrderType, "Tip naloga");
+
         if (request.Items is null || request.Items.Count == 0)
             throw new AppException("Nalog mora imati bar jednu stavku.");
 
@@ -128,7 +130,7 @@ public class OrderService : IOrderService
             StoreId = storeId,
             SourceLocationId = sourceLocationId,
             DestinationLocationId = destinationLocationId,
-            Note = request.Note?.Trim(),
+            Note = Guard.Optional(request.Note, "Napomena", 1000),
             CreatedByUserId = currentUserId
         };
 
@@ -182,7 +184,7 @@ public class OrderService : IOrderService
         order.StoreId = storeId;
         order.SourceLocationId = sourceLocationId;
         order.DestinationLocationId = destinationLocationId;
-        order.Note = request.Note?.Trim();
+        order.Note = Guard.Optional(request.Note, "Napomena", 1000);
 
         repo.Update(order);
         await _uow.SaveChangesAsync(ct);
@@ -208,7 +210,9 @@ public class OrderService : IOrderService
         _events.Add(new OrderChangedEvent(id, order.Status, order.Status, null));
     }
 
-    public async Task<OrderDetailDto> ChangeStatusAsync(int id, ChangeOrderStatusRequest request, int currentUserId, CancellationToken ct = default)
+    public async Task<OrderDetailDto> ChangeStatusAsync(
+        int id, ChangeOrderStatusRequest request, int currentUserId, Func<string, bool> hasPermission,
+        CancellationToken ct = default)
     {
         var repo = _uow.Repository<Order>();
 
@@ -217,10 +221,16 @@ public class OrderService : IOrderService
             .FirstOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new AppException("Nalog nije pronadjen.", 404);
 
+        if (!Enum.IsDefined(request.Status))
+            throw new AppException("Nepoznat status naloga.");
+
         if (!OrderStatusRules.CanTransition(order.Status, request.Status))
             throw new AppException(
                 $"Prelazak iz statusa '{OrderStatusRules.Title(order.Status)}' u " +
                 $"'{OrderStatusRules.Title(request.Status)}' nije dozvoljen.");
+
+        if (!hasPermission(OrderStatusRules.RequiredPermission(order.Status, request.Status)))
+            throw new AppException("Nemate dozvolu za ovaj prelazak statusa.", 403);
 
         if (request.Status == OrderStatus.InProgress)
         {
@@ -256,7 +266,7 @@ public class OrderService : IOrderService
             FromStatus = previousStatus,
             ToStatus = request.Status,
             ChangedByUserId = currentUserId,
-            Note = request.Note?.Trim()
+            Note = Guard.Optional(request.Note, "Napomena", 500)
         });
 
         repo.Update(order);
@@ -331,7 +341,7 @@ public class OrderService : IOrderService
         var products = await _uow.Repository<Product>()
             .Query()
             .Where(x => productIds.Contains(x.Id))
-            .Select(x => new { x.Id, x.Price, x.IsActive, x.Name })
+            .Select(x => new { x.Id, x.Price, x.IsActive, x.Name, x.UnitOfMeasure })
             .ToListAsync(ct);
 
         if (products.Count != productIds.Count)
@@ -349,10 +359,14 @@ public class OrderService : IOrderService
                 throw new AppException("Kolicina stavke mora biti veca od nule.");
 
             var product = products.First(x => x.Id == line.ProductId);
+            Guard.Quantity(line.Quantity, product.UnitOfMeasure, product.Name);
+
             var unitPrice = line.UnitPrice ?? product.Price;
 
             if (unitPrice < 0)
                 throw new AppException("Cena stavke ne moze biti negativna.");
+
+            Guard.Money(unitPrice, "Cena stavke");
 
             items.Add(new OrderItem
             {

@@ -23,7 +23,7 @@ public class AuthController : ControllerBase
 
     [HttpPost("refresh")]
     [AllowAnonymous]
-    [EnableRateLimiting("auth")]
+    [EnableRateLimiting("refresh")]
     public async Task<ActionResult<AuthResponse>> Refresh(RefreshRequest request, CancellationToken ct)
         => Ok(await _authService.RefreshAsync(request, GetIp(), ct));
 

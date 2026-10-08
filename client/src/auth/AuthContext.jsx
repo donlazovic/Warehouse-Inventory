@@ -1,4 +1,11 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { authApi } from "../api/endpoints";
 import { setSessionExpiredHandler, tokenStore } from "../api/client";
 
@@ -13,9 +20,7 @@ export function AuthProvider({ children }) {
     if (refreshToken) {
       try {
         await authApi.logout(refreshToken);
-      } catch {
-        // odjava je lokalna i kad server ne odgovori
-      }
+      } catch {}
     }
     tokenStore.clear();
     setUser(null);
@@ -34,7 +39,9 @@ export function AuthProvider({ children }) {
     authApi
       .me()
       .then(setUser)
-      .catch(() => tokenStore.clear())
+      .catch((err) => {
+        if ([400, 401, 403].includes(err.response?.status)) tokenStore.clear();
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -45,15 +52,22 @@ export function AuthProvider({ children }) {
     return result.user;
   }, []);
 
+  const applySession = useCallback((result) => {
+    tokenStore.set(result);
+    setUser(result.user);
+  }, []);
+
   const value = useMemo(
     () => ({
       user,
       loading,
       signIn,
       signOut,
+      updateUser: setUser,
+      applySession,
       can: (permission) => Boolean(user?.permissions?.includes(permission)),
     }),
-    [user, loading, signIn, signOut]
+    [user, loading, signIn, signOut, applySession],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

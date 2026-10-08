@@ -145,8 +145,16 @@ public class StockService : IStockService
         if (string.IsNullOrWhiteSpace(request.Note))
             throw new AppException("Razlog korekcije je obavezan.");
 
-        if (!await _uow.Repository<Product>().ExistsAsync(x => x.Id == request.ProductId, ct))
-            throw new AppException("Proizvod nije pronadjen.", 404);
+        var note = Guard.Required(request.Note, "Razlog korekcije", 500);
+
+        var product = await _uow.Repository<Product>()
+            .Query()
+            .Where(x => x.Id == request.ProductId)
+            .Select(x => new { x.Name, x.UnitOfMeasure })
+            .FirstOrDefaultAsync(ct)
+            ?? throw new AppException("Proizvod nije pronadjen.", 404);
+
+        Guard.Quantity(request.NewQuantity, product.UnitOfMeasure, product.Name, zeroAllowed: true);
 
         if (!await _uow.Repository<StorageLocation>().ExistsAsync(x => x.Id == request.StorageLocationId && x.IsActive, ct))
             throw new AppException("Lokacija ne postoji ili je deaktivirana.", 404);
@@ -174,7 +182,7 @@ public class StockService : IStockService
             toLocationId: difference > 0 ? request.StorageLocationId : null,
             currentUserId,
             orderId: null,
-            note: request.Note.Trim(),
+            note: note,
             ct: ct);
 
         await _uow.SaveChangesAsync(ct);
@@ -200,6 +208,24 @@ public class StockService : IStockService
         if (request.Items.Any(x => x.Quantity <= 0))
             throw new AppException("Kolicina svake stavke mora biti veca od nule.");
 
+        var note = Guard.Optional(request.Note, "Napomena", 500);
+        var productIds = request.Items.Select(x => x.ProductId).ToList();
+
+        var products = await _uow.Repository<Product>()
+            .Query()
+            .Where(x => productIds.Contains(x.Id))
+            .Select(x => new { x.Id, x.Name, x.UnitOfMeasure })
+            .ToListAsync(ct);
+
+        if (products.Count != productIds.Count)
+            throw new AppException("Jedan ili vise proizvoda ne postoji.");
+
+        foreach (var line in request.Items)
+        {
+            var product = products.First(x => x.Id == line.ProductId);
+            Guard.Quantity(line.Quantity, product.UnitOfMeasure, product.Name);
+        }
+
         if (!await _uow.Repository<StorageLocation>().ExistsAsync(x => x.Id == request.StorageLocationId && x.IsActive, ct))
             throw new AppException("Lokacija ne postoji ili je deaktivirana.");
 
@@ -215,7 +241,7 @@ public class StockService : IStockService
                 toLocationId: null,
                 currentUserId,
                 orderId: null,
-                note: request.Note?.Trim(),
+                note: note,
                 issueReason: request.Reason,
                 ct: ct);
         }

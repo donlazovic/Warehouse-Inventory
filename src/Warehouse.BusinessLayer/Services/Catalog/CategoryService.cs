@@ -84,8 +84,10 @@ public class CategoryService : ICategoryService
     {
         var repo = _uow.Repository<Category>();
         var parentId = request.ParentCategoryId is > 0 ? request.ParentCategoryId : null;
+        var name = Guard.Required(request.Name, "Naziv", 150);
+        var description = Guard.Optional(request.Description, "Opis", 500);
 
-        if (await repo.ExistsAsync(x => x.Name == request.Name && x.ParentCategoryId == parentId, ct))
+        if (await repo.ExistsAsync(x => x.Name == name && x.ParentCategoryId == parentId, ct))
             throw new AppException("Kategorija sa istim nazivom vec postoji na tom nivou.");
 
         if (parentId.HasValue && !await repo.ExistsAsync(x => x.Id == parentId, ct))
@@ -93,8 +95,8 @@ public class CategoryService : ICategoryService
 
         var category = new Category
         {
-            Name = request.Name.Trim(),
-            Description = request.Description?.Trim(),
+            Name = name,
+            Description = description,
             ParentCategoryId = parentId,
             IsActive = true
         };
@@ -119,8 +121,16 @@ public class CategoryService : ICategoryService
         if (parentId.HasValue && await IsDescendantAsync(parentId.Value, id, ct))
             throw new AppException("Nadredjena kategorija ne moze biti podredjena ovoj kategoriji.");
 
-        category.Name = request.Name.Trim();
-        category.Description = request.Description?.Trim();
+        if (parentId.HasValue && !await repo.ExistsAsync(x => x.Id == parentId, ct))
+            throw new AppException("Nadredjena kategorija ne postoji.");
+
+        var name = Guard.Required(request.Name, "Naziv", 150);
+
+        if (await repo.ExistsAsync(x => x.Name == name && x.ParentCategoryId == parentId && x.Id != id, ct))
+            throw new AppException("Kategorija sa istim nazivom vec postoji na tom nivou.");
+
+        category.Name = name;
+        category.Description = Guard.Optional(request.Description, "Opis", 500);
         category.ParentCategoryId = parentId;
         category.IsActive = request.IsActive;
 

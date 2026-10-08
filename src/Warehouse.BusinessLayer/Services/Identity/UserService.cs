@@ -66,6 +66,8 @@ public class UserService : IUserService
     public async Task RegisterAsync(RegisterRequest request, CancellationToken ct = default)
     {
         var email = NormalizeEmail(request.Email);
+        var firstName = Guard.Required(request.FirstName, "Ime", 100);
+        var lastName = Guard.Required(request.LastName, "Prezime", 100);
         ValidatePassword(request.Password);
 
         if (await _uow.Repository<User>().ExistsAsync(x => x.Email == email, ct))
@@ -78,8 +80,8 @@ public class UserService : IUserService
 
         var user = new User
         {
-            FirstName = request.FirstName.Trim(),
-            LastName = request.LastName.Trim(),
+            FirstName = firstName,
+            LastName = lastName,
             Email = email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             RoleId = pendingRole.Id,
@@ -96,6 +98,8 @@ public class UserService : IUserService
     public async Task<UserDto> CreateAsync(CreateUserRequest request, int currentUserId, CancellationToken ct = default)
     {
         var email = NormalizeEmail(request.Email);
+        var firstName = Guard.Required(request.FirstName, "Ime", 100);
+        var lastName = Guard.Required(request.LastName, "Prezime", 100);
         ValidatePassword(request.Password);
 
         if (await _uow.Repository<User>().ExistsAsync(x => x.Email == email, ct))
@@ -108,8 +112,8 @@ public class UserService : IUserService
 
         var user = new User
         {
-            FirstName = request.FirstName.Trim(),
-            LastName = request.LastName.Trim(),
+            FirstName = firstName,
+            LastName = lastName,
             Email = email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             RoleId = request.RoleId,
@@ -150,8 +154,8 @@ public class UserService : IUserService
         if (user.Role.Name == AdminRoleName && (request.RoleId != user.RoleId || !request.IsActive))
             await EnsureNotLastAdminAsync(id, ct);
 
-        user.FirstName = request.FirstName.Trim();
-        user.LastName = request.LastName.Trim();
+        user.FirstName = Guard.Required(request.FirstName, "Ime", 100);
+        user.LastName = Guard.Required(request.LastName, "Prezime", 100);
         user.RoleId = request.RoleId;
 
         if (user.IsActive && !request.IsActive)
@@ -280,7 +284,7 @@ public class UserService : IUserService
             throw new AppException("Sistem mora imati bar jednog aktivnog administratora.");
     }
 
-    private static string NormalizeEmail(string email) => email.Trim().ToLowerInvariant();
+    private static string NormalizeEmail(string? email) => Guard.Email(email, required: true)!.ToLowerInvariant();
 
     private static void ValidatePassword(string password)
     {
