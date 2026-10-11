@@ -16,7 +16,6 @@ public class PasswordResetService : IPasswordResetService
 {
     private const int TokenLifetimeMinutes = 30;
     private const int RequestCooldownSeconds = 60;
-    private const int MinPasswordLength = 8;
     private const string InvalidLinkMessage = "Link za promenu lozinke nije validan ili je istekao. Zatrazite novi.";
 
     private readonly IUnitOfWork _uow;
@@ -115,8 +114,7 @@ public class PasswordResetService : IPasswordResetService
 
     public async Task ResetAsync(ResetPasswordWithTokenRequest request, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(request.NewPassword) || request.NewPassword.Length < MinPasswordLength)
-            throw new AppException($"Lozinka mora imati najmanje {MinPasswordLength} karaktera.");
+        PasswordPolicy.Validate(request.NewPassword);
 
         if (string.IsNullOrWhiteSpace(request.Token))
             throw new AppException(InvalidLinkMessage);

@@ -18,8 +18,6 @@ public class AuthService : IAuthService
     private readonly IEmailSender _email;
     private readonly ILogger<AuthService> _logger;
 
-    private const int MinPasswordLength = 8;
-
     public AuthService(
         IUnitOfWork uow,
         IJwtTokenService tokenService,
@@ -61,13 +59,15 @@ public class AuthService : IAuthService
     {
         var tokenRepo = _uow.Repository<RefreshToken>();
 
+        var hash = TokenHasher.Sha256(request.RefreshToken ?? string.Empty);
+
         var stored = await tokenRepo
             .Query(asNoTracking: false)
             .Include(x => x.User)
                 .ThenInclude(u => u.Role)
                     .ThenInclude(r => r.RolePermissions)
                         .ThenInclude(rp => rp.Permission)
-            .FirstOrDefaultAsync(x => x.Token == request.RefreshToken, ct);
+            .FirstOrDefaultAsync(x => x.Token == hash, ct);
 
         if (stored is null || !stored.IsActive)
             throw new AppException("Refresh token nije validan.", 401);
@@ -85,9 +85,11 @@ public class AuthService : IAuthService
     {
         var tokenRepo = _uow.Repository<RefreshToken>();
 
+        var hash = TokenHasher.Sha256(refreshToken ?? string.Empty);
+
         var stored = await tokenRepo
             .Query(asNoTracking: false)
-            .FirstOrDefaultAsync(x => x.Token == refreshToken, ct);
+            .FirstOrDefaultAsync(x => x.Token == hash, ct);
 
         if (stored is null || !stored.IsActive)
             return;
@@ -148,8 +150,7 @@ public class AuthService : IAuthService
         if (string.IsNullOrEmpty(request.CurrentPassword) || !BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
             throw new AppException("Trenutna lozinka nije tacna.");
 
-        if (string.IsNullOrWhiteSpace(request.NewPassword) || request.NewPassword.Length < MinPasswordLength)
-            throw new AppException($"Nova lozinka mora imati najmanje {MinPasswordLength} karaktera.");
+        PasswordPolicy.Validate(request.NewPassword, "Nova lozinka");
 
         if (BCrypt.Net.BCrypt.Verify(request.NewPassword, user.PasswordHash))
             throw new AppException("Nova lozinka mora se razlikovati od trenutne.");
@@ -188,9 +189,11 @@ public class AuthService : IAuthService
         var permissions = GetPermissions(user);
         var (accessToken, expiresAt) = _tokenService.CreateAccessToken(user, permissions);
 
+        var rawRefreshToken = _tokenService.CreateRefreshToken();
+
         var refreshToken = new RefreshToken
         {
-            Token = _tokenService.CreateRefreshToken(),
+            Token = TokenHasher.Sha256(rawRefreshToken),
             ExpiresAt = DateTime.UtcNow.AddDays(_settings.RefreshTokenDays),
             CreatedByIp = ip,
             UserId = user.Id
@@ -203,7 +206,7 @@ public class AuthService : IAuthService
 
         await _uow.SaveChangesAsync(ct);
 
-        return new AuthResponse(accessToken, refreshToken.Token, expiresAt, MapCurrentUser(user, permissions));
+        return new AuthResponse(accessToken, rawRefreshToken, expiresAt, MapCurrentUser(user, permissions));
     }
 
     private static List<string> GetPermissions(User user)

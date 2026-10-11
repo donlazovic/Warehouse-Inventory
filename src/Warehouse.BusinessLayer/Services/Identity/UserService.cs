@@ -11,7 +11,6 @@ public class UserService : IUserService
 {
     private const string AdminRoleName = "Admin";
     private const string DefaultPendingRoleName = "Viewer";
-    private const int MinPasswordLength = 8;
 
     private readonly IUnitOfWork _uow;
     private readonly IEventCollector _events;
@@ -286,11 +285,7 @@ public class UserService : IUserService
 
     private static string NormalizeEmail(string? email) => Guard.Email(email, required: true)!.ToLowerInvariant();
 
-    private static void ValidatePassword(string password)
-    {
-        if (string.IsNullOrWhiteSpace(password) || password.Length < MinPasswordLength)
-            throw new AppException($"Lozinka mora imati najmanje {MinPasswordLength} karaktera.");
-    }
+    private static void ValidatePassword(string password) => PasswordPolicy.Validate(password);
 
     private static IQueryable<UserDto> Project(IQueryable<User> query)
         => query.Select(x => new UserDto(
