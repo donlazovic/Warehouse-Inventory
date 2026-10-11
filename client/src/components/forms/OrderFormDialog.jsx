@@ -81,10 +81,34 @@ export default function OrderFormDialog({
     [locations]
   );
 
-  const storeLocations = useMemo(
-    () => locations.filter((location) => location.locationType === 2),
-    [locations]
-  );
+  const locationsOfStore = (id) =>
+    id === "" ? [] : locations.filter((location) => location.locationType === 2 && location.storeId === Number(id));
+
+  const storeLocations = locationsOfStore(storeId);
+
+  const onlyId = (list) => (list.length === 1 ? list[0].id : "");
+
+  const handleTypeChange = (value) => {
+    const warehouses = locations.filter((location) => location.locationType === 1);
+    setOrderType(value);
+    setSupplierId("");
+    setStoreId("");
+    if (Number(value) === 1) {
+      setSourceLocationId("");
+      setDestinationLocationId(onlyId(warehouses));
+    } else {
+      setSourceLocationId(onlyId(warehouses));
+      setDestinationLocationId("");
+    }
+  };
+
+  const handleStoreChange = (value) => {
+    setStoreId(value);
+    const own = locationsOfStore(value);
+    setDestinationLocationId((current) =>
+      own.some((location) => location.id === Number(current)) ? current : onlyId(own)
+    );
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -110,7 +134,9 @@ export default function OrderFormDialog({
       setSupplierId("");
       setStoreId(initial.storeId ?? "");
       setSourceLocationId(initial.sourceLocationId ?? (warehouses.length === 1 ? warehouses[0].id : ""));
-      setDestinationLocationId(initial.destinationLocationId ?? "");
+      setDestinationLocationId(
+        initial.destinationLocationId ?? onlyId(locationsOfStore(initial.storeId ?? ""))
+      );
       setNote(initial.note ?? "");
       setLines(
         initial.lines?.length
@@ -122,7 +148,7 @@ export default function OrderFormDialog({
       setSupplierId("");
       setStoreId("");
       setSourceLocationId("");
-      setDestinationLocationId("");
+      setDestinationLocationId(onlyId(locations.filter((location) => location.locationType === 1)));
       setNote("");
       setLines([{ ...emptyLine }]);
     }
@@ -216,7 +242,7 @@ export default function OrderFormDialog({
           select
           label="Tip naloga"
           value={orderType}
-          onChange={(event) => setOrderType(event.target.value)}
+          onChange={(event) => handleTypeChange(event.target.value)}
           disabled={Boolean(order)}
           sx={{ width: 200 }}
           helperText={order ? "Tip se ne menja" : "Ulazni od dobavljaca, izlazni ka objektu"}
@@ -245,7 +271,7 @@ export default function OrderFormDialog({
             select
             label="Prodajni objekat"
             value={storeId}
-            onChange={(event) => setStoreId(event.target.value)}
+            onChange={(event) => handleStoreChange(event.target.value)}
             required
             fullWidth
           >
@@ -284,7 +310,14 @@ export default function OrderFormDialog({
           onChange={(event) => setDestinationLocationId(event.target.value)}
           required
           fullWidth
-          helperText="Kuda roba ide"
+          disabled={!isInbound && storeId === ""}
+          helperText={
+            !isInbound && storeId === ""
+              ? "Prvo izaberite prodajni objekat"
+              : !isInbound && storeLocations.length > 1
+                ? "Objekat ima vise lokacija — izaberite gde roba staje"
+                : "Kuda roba ide"
+          }
         >
           {(isInbound ? warehouseLocations : storeLocations).map((location) => (
             <MenuItem key={location.id} value={location.id}>
