@@ -3,6 +3,7 @@ import { Alert, Box, Chip, MenuItem, Paper, Stack, TextField, Typography } from 
 import { useCallback, useEffect, useState } from "react";
 import { exportParams, exportsApi, locationsApi, stockApi, storesApi } from "../api/endpoints";
 import { useAuth } from "../auth/AuthContext";
+import DatePickerField from "../components/common/DatePickerField";
 import ClearFiltersButton from "../components/common/ClearFiltersButton";
 import DataTable from "../components/common/DataTable";
 import SearchField from "../components/common/SearchField";
@@ -67,8 +68,7 @@ export default function MovementsPage() {
 
   useRealtimeEvent("stockChanged", () => query.reload());
 
-  const setDate = (field) => (event) => {
-    const value = event.target.value;
+  const setDate = (field) => (value) => {
     setRange((current) => ({ ...current, [field]: value }));
     query.patchFilter(field === "from" ? { dateFrom: startOfDayIso(value) } : { dateTo: endOfDayIso(value) });
   };
@@ -245,19 +245,21 @@ export default function MovementsPage() {
               </MenuItem>
             ))}
           </TextField>
-          <TextField
+          <DatePickerField
             label="Od"
-            type="date"
             value={range.from}
             onChange={setDate("from")}
-            slotProps={{ inputLabel: { shrink: true } }}
+            max={range.to || undefined}
+            rangeEnd={range.to || undefined}
+            width={172}
           />
-          <TextField
+          <DatePickerField
             label="Do"
-            type="date"
             value={range.to}
             onChange={setDate("to")}
-            slotProps={{ inputLabel: { shrink: true } }}
+            min={range.from || undefined}
+            rangeStart={range.from || undefined}
+            width={172}
           />
           <ClearFiltersButton
             active={query.hasActiveFilters || Boolean(range.from || range.to)}

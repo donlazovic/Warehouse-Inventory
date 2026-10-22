@@ -97,8 +97,8 @@ export default function TurnoverReport({ locations, categories }) {
   return (
     <Box>
       <FilterBar>
-        <DateField label="Od" value={filter.from} onChange={set("from")} />
-        <DateField label="Do" value={filter.to} onChange={set("to")} />
+        <DateField label="Od" value={filter.from} onChange={set("from")} max={filter.to || undefined} rangeEnd={filter.to || undefined} />
+        <DateField label="Do" value={filter.to} onChange={set("to")} min={filter.from || undefined} rangeStart={filter.from || undefined} />
         <LocationSelect locations={locations} value={filter.locationId} onChange={set("locationId")} emptyLabel="Ceo lanac" />
         <CategorySelect categories={categories} value={filter.categoryId} onChange={set("categoryId")} />
         <ClearFiltersButton active={changed} onClick={() => setFilter(defaults())} />

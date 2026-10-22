@@ -47,17 +47,91 @@ export default function OrderFormDialog({
   const [submitting, setSubmitting] = useState(false);
 
   const isInbound = Number(orderType) === 1;
+  // Zalihe svih proizvoda iz stavki po zonama centralnog magacina, za predlog izvorne lokacije
+  const [warehouseStock, setWarehouseStock] = useState({});
+  const productKey = [...new Set(lines.map((line) => Number(line.productId)).filter(Boolean))].sort().join(",");
+
+  useEffect(() => {
+    // bez stavki ili za ulazni nalog predlog se ne racuna, pa stari podaci ne smetaju
+    if (!open || isInbound || productKey === "") return;
+
+    let active = true;
+    const ids = productKey.split(",").map(Number);
+    Promise.all(ids.map((productId) => stockApi.list({ productId, locationType: 1, pageSize: 100 })))
+      .then((results) => {
+        if (!active) return;
+        const next = {};
+        ids.forEach((productId, index) => {
+          next[productId] = Object.fromEntries(
+            results[index].items.map((item) => [item.storageLocationId, item.quantity])
+          );
+        });
+        setWarehouseStock(next);
+      })
+      .catch(() => active && setWarehouseStock({}));
+
+    return () => {
+      active = false;
+    };
+  }, [open, isInbound, productKey]);
+
+  const warehouseLocations = useMemo(
+    () => locations.filter((location) => location.locationType === 1),
+    [locations]
+  );
+
+  const requested = lines
+    .filter((line) => line.productId !== "")
+    .map((line) => ({ productId: Number(line.productId), quantity: Number(line.quantity) || 0 }));
+  const loaded = requested.length > 0 && requested.every((line) => warehouseStock[line.productId]);
+
+  const coverageOf = (locationId) => {
+    let full = 0;
+    let some = 0;
+    requested.forEach((line) => {
+      const qty = warehouseStock[line.productId]?.[locationId] ?? 0;
+      if (qty > 0) some += 1;
+      if (qty > 0 && qty >= line.quantity) full += 1;
+    });
+    return { full, some };
+  };
+
+  const suggestion = useMemo(() => {
+    if (isInbound || !loaded) return null;
+    const ranked = warehouseLocations
+      .map((location) => ({
+        location,
+        ...coverageOf(location.id),
+        firstQty: warehouseStock[requested[0].productId]?.[location.id] ?? 0,
+      }))
+      .filter((entry) => entry.some > 0)
+      .sort((a, b) => b.full - a.full || b.some - a.some || b.firstQty - a.firstQty);
+    return ranked[0]?.location ?? null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isInbound, loaded, warehouseStock, warehouseLocations, lines]);
+
+  const missingEverywhere = loaded
+    ? requested
+        .filter((line) => !Object.values(warehouseStock[line.productId] ?? {}).some((qty) => qty > 0))
+        .map((line) => products.find((product) => product.id === line.productId)?.name)
+        .filter(Boolean)
+    : [];
+
+  // Dok korisnik sam ne izabere izvornu lokaciju, koristi se predlog
+  const autoSource = !isInbound && sourceLocationId === "" && Boolean(suggestion);
+  const effectiveSourceId = autoSource ? suggestion.id : sourceLocationId;
+
   const [available, setAvailable] = useState({});
 
   useEffect(() => {
-    if (!open || isInbound || sourceLocationId === "") {
+    if (!open || isInbound || effectiveSourceId === "") {
       setAvailable({});
       return;
     }
 
     let active = true;
     stockApi
-      .list({ storageLocationId: sourceLocationId, pageSize: 100 })
+      .list({ storageLocationId: effectiveSourceId, pageSize: 100 })
       .then((result) => {
         if (!active) return;
         setAvailable(Object.fromEntries(result.items.map((item) => [item.productId, item.quantity])));
@@ -67,19 +141,32 @@ export default function OrderFormDialog({
     return () => {
       active = false;
     };
-  }, [open, isInbound, sourceLocationId]);
+  }, [open, isInbound, effectiveSourceId]);
 
-  const showStock = !isInbound && sourceLocationId !== "";
+  const showStock = !isInbound && effectiveSourceId !== "";
   const stockOf = (productId) => available[Number(productId)] ?? 0;
   const usedIds = new Set(lines.map((line) => Number(line.productId)).filter(Boolean));
   const shortLines = showStock
     ? lines.filter((line) => line.productId !== "" && Number(line.quantity) > stockOf(line.productId)).length
     : 0;
 
-  const warehouseLocations = useMemo(
-    () => locations.filter((location) => location.locationType === 1),
-    [locations]
-  );
+
+  const coverageLabel = (locationId) => {
+    if (requested.length === 0 || !loaded) return null;
+    if (requested.length === 1) {
+      const product = products.find((item) => item.id === requested[0].productId);
+      const qty = warehouseStock[requested[0].productId]?.[locationId] ?? 0;
+      return {
+        text: `${formatQuantity(qty)} ${unitLabels[product?.unitOfMeasure] ?? ""}`.trim(),
+        tone: qty <= 0 ? "text.disabled" : qty >= requested[0].quantity ? "success.main" : "warning.main",
+      };
+    }
+    const { full, some } = coverageOf(locationId);
+    return {
+      text: `${full}/${requested.length} stavki`,
+      tone: full === requested.length ? "success.main" : some > 0 ? "warning.main" : "text.disabled",
+    };
+  };
 
   const locationsOfStore = (id) =>
     id === "" ? [] : locations.filter((location) => location.locationType === 2 && location.storeId === Number(id));
@@ -140,7 +227,11 @@ export default function OrderFormDialog({
       setNote(initial.note ?? "");
       setLines(
         initial.lines?.length
-          ? initial.lines.map((line) => ({ productId: line.productId, quantity: line.quantity, unitPrice: "" }))
+          ? initial.lines.map((line) => ({
+              productId: line.productId,
+              quantity: line.quantity,
+              unitPrice: products.find((product) => product.id === Number(line.productId))?.price ?? "",
+            }))
           : [{ ...emptyLine }]
       );
     } else {
@@ -204,7 +295,7 @@ export default function OrderFormDialog({
     const payload = {
       supplierId: isInbound && supplierId !== "" ? Number(supplierId) : null,
       storeId: !isInbound && storeId !== "" ? Number(storeId) : null,
-      sourceLocationId: !isInbound && sourceLocationId !== "" ? Number(sourceLocationId) : null,
+      sourceLocationId: !isInbound && effectiveSourceId !== "" ? Number(effectiveSourceId) : null,
       destinationLocationId: destinationLocationId !== "" ? Number(destinationLocationId) : null,
       note: note.trim() || null,
       items,
@@ -289,17 +380,39 @@ export default function OrderFormDialog({
           <TextField
             select
             label="Izvorna lokacija"
-            value={sourceLocationId}
+            value={effectiveSourceId}
             onChange={(event) => setSourceLocationId(event.target.value)}
             required
             fullWidth
-            helperText="Odakle se roba skida"
+            helperText={
+              autoSource
+                ? "Predlog: zona sa najvise trazene robe"
+                : "Odakle se roba skida"
+            }
+            slotProps={{
+              select: {
+                renderValue: (selected) => {
+                  const location = warehouseLocations.find((item) => item.id === Number(selected));
+                  return location ? `${location.code} — ${location.name}` : "";
+                },
+              },
+            }}
           >
-            {warehouseLocations.map((location) => (
-              <MenuItem key={location.id} value={location.id}>
-                {location.code} — {location.name}
-              </MenuItem>
-            ))}
+            {warehouseLocations.map((location) => {
+              const coverage = coverageLabel(location.id);
+              return (
+                <MenuItem key={location.id} value={location.id} sx={{ gap: 2 }}>
+                  <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                    {location.code} — {location.name}
+                  </Box>
+                  {coverage && (
+                    <Typography sx={{ fontFamily: monoFont, fontSize: "0.75rem", color: coverage.tone, whiteSpace: "nowrap" }}>
+                      {coverage.text}
+                    </Typography>
+                  )}
+                </MenuItem>
+              );
+            })}
           </TextField>
         )}
 
@@ -355,6 +468,26 @@ export default function OrderFormDialog({
             Dodaj stavku
           </Button>
         </Stack>
+
+        {!isInbound && missingEverywhere.length > 0 && (
+          <Alert
+            severity="info"
+            variant="outlined"
+            sx={{ mb: 1.5 }}
+            action={
+              !order && (
+                <Button color="inherit" size="small" sx={{ whiteSpace: "nowrap" }} onClick={() => handleTypeChange(1)}>
+                  Napravi ulazni nalog
+                </Button>
+              )
+            }
+          >
+            {missingEverywhere.length === 1
+              ? `Artikla „${missingEverywhere[0]}“ nema ni u jednoj zoni centralnog magacina.`
+              : `Artikala ${missingEverywhere.map((name) => `„${name}“`).join(", ")} nema ni u jednoj zoni centralnog magacina.`}{" "}
+            Prvo je potrebno napraviti ulazni nalog od dobavljaca.
+          </Alert>
+        )}
 
         {shortLines > 0 && (
           <Alert severity="warning" variant="outlined" sx={{ mb: 1.5 }}>

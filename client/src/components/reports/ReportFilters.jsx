@@ -1,16 +1,8 @@
 import { MenuItem, Paper, Stack, TextField } from "@mui/material";
+import DatePickerField from "../common/DatePickerField";
 
-export function DateField({ label, value, onChange }) {
-  return (
-    <TextField
-      label={label}
-      type="date"
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      slotProps={{ inputLabel: { shrink: true } }}
-      sx={{ width: 170 }}
-    />
-  );
+export function DateField({ label, value, onChange, ...rest }) {
+  return <DatePickerField label={label} value={value} onChange={onChange} width={176} {...rest} />;
 }
 
 export function LocationSelect({ locations, value, onChange, emptyLabel = "Sve lokacije" }) {

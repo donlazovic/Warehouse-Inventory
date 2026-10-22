@@ -1,5 +1,5 @@
-import { TextField } from "@mui/material";
 import { endOfDayIso, startOfDayIso, toDateInput } from "../../utils/format";
+import DatePickerField from "./DatePickerField";
 
 /**
  * Dva polja za datum koja citaju i pisu ISO vrednosti iz filtera.
@@ -13,23 +13,23 @@ export default function DateRangeFields({ from, to, onChange, fromLabel = "Od", 
 
   return (
     <>
-      <TextField
+      <DatePickerField
         label={fromLabel}
-        type="date"
         value={fromValue}
-        onChange={(event) => onChange({ from: startOfDayIso(event.target.value), to })}
-        slotProps={{ inputLabel: { shrink: true }, htmlInput: { max: toValue || undefined } }}
-        sx={{ width: 160 }}
+        onChange={(value) => onChange({ from: startOfDayIso(value), to })}
+        max={toValue || undefined}
+        rangeEnd={toValue || undefined}
+        width={172}
       />
-      <TextField
+      <DatePickerField
         label={toLabel}
-        type="date"
         value={toValue}
         error={invalid}
         helperText={invalid ? "Pre pocetnog datuma" : undefined}
-        onChange={(event) => onChange({ from, to: endOfDayIso(event.target.value) })}
-        slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: fromValue || undefined } }}
-        sx={{ width: 160 }}
+        onChange={(value) => onChange({ from, to: endOfDayIso(value) })}
+        min={fromValue || undefined}
+        rangeStart={fromValue || undefined}
+        width={172}
       />
     </>
   );

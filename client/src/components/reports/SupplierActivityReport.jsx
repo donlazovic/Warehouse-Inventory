@@ -113,8 +113,8 @@ export default function SupplierActivityReport() {
             </MenuItem>
           ))}
         </TextField>
-        <DateField label="Od" value={filter.from} onChange={set("from")} />
-        <DateField label="Do" value={filter.to} onChange={set("to")} />
+        <DateField label="Od" value={filter.from} onChange={set("from")} max={filter.to || undefined} rangeEnd={filter.to || undefined} />
+        <DateField label="Do" value={filter.to} onChange={set("to")} min={filter.from || undefined} rangeStart={filter.from || undefined} />
         <ClearFiltersButton active={changed} onClick={() => setFilter(defaults())} />
         {can("reports.export") && (
           <ExportMenu
